@@ -20,6 +20,10 @@ The build is ad-hoc signed. macOS ties Screen Recording permission to the signat
 after every rebuild. To keep the permission, sign with a stable identity:
 `KEPT_SIGN_IDENTITY="Apple Development: …" scripts/build-app.sh`.
 
+## Share to Kept
+
+Open the built app once, then choose **Share → Kept** in a Mac app to save a link, selected text, or an image. Share one item at a time. If Kept is hidden, enable it in the Share menu’s extension settings. Sharing works even when clipboard capture is paused.
+
 ## Layout
 
 | Path | What |

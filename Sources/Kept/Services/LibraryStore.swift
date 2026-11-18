@@ -167,6 +167,22 @@ final class LibraryStore: ObservableObject {
         ingest(content, method: .manual, source: nil, select: true)
     }
 
+    func importShare(_ url: URL) {
+        do {
+            guard let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                  size > 0, size < 60_000_000 else { throw CocoaError(.fileReadTooLarge) }
+            let data = try Data(contentsOf: url)
+            let content: ClipContent
+            if url.pathExtension == "keptimage" {
+                content = .image(data)
+            } else {
+                guard let text = String(data: data, encoding: .utf8) else { throw CocoaError(.fileReadCorruptFile) }
+                content = ClipboardReader.isSingleURL(text) ? .link(text) : .text(text)
+            }
+            ingest(content, method: .manual, source: nil, select: true)
+        } catch { report("read the shared item", error) }
+    }
+
     /// Imports image files (dropped, opened with Kept, or chosen in the import panel).
     func importFiles(_ urls: [URL]) {
         var imported = false

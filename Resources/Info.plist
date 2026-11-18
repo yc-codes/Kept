@@ -44,6 +44,22 @@
                 <string>public.image</string>
             </array>
         </dict>
+        <dict>
+            <key>CFBundleTypeName</key><string>Kept shared item</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSItemContentTypes</key><array><string>app.kept.share-item</string></array>
+        </dict>
+    </array>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key><string>app.kept.share-item</string>
+            <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key><array><string>keptimage</string><string>kepttext</string></array>
+            </dict>
+        </dict>
     </array>
     <key>CFBundleURLTypes</key>
     <array>

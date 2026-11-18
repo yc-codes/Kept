@@ -78,7 +78,11 @@ struct LibraryView: View {
         .onOpenURL { url in
             // An image opened with Kept, or a kept://item/<id> link.
             if url.isFileURL {
-                library.importFiles([url])
+                if ["kepttext", "keptimage"].contains(url.pathExtension) {
+                    library.importShare(url)
+                } else {
+                    library.importFiles([url])
+                }
             } else if url.scheme == "kept", url.host == "item" {
                 library.reveal(url.lastPathComponent)
                 showInspector = true

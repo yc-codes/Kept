@@ -32,6 +32,14 @@ if [ ! -f "$ICNS" ] || [ scripts/make-icon.swift -nt "$ICNS" ]; then
 fi
 cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 
+EXT="$APP/Contents/PlugIns/KeptShare.appex"
+mkdir -p "$EXT/Contents/MacOS"
+cp ShareExtension/Info.plist "$EXT/Contents/Info.plist"
+xcrun swiftc -target "$(uname -m)-apple-macos14.0" -application-extension -parse-as-library \
+    ShareExtension/ShareViewController.swift -Xlinker -e -Xlinker _NSExtensionMain \
+    -o "$EXT/Contents/MacOS/KeptShare"
+codesign --force --sign "${KEPT_SIGN_IDENTITY:--}" --entitlements ShareExtension/Share.entitlements "$EXT"
+
 # Ad-hoc signature. macOS ties Screen Recording permission to the signature, so it asks again after each
 # rebuild. Set KEPT_SIGN_IDENTITY to a real signing identity to keep the permission across builds.
 codesign --force --sign "${KEPT_SIGN_IDENTITY:--}" --identifier app.kept.Kept "$APP/Contents/MacOS/kept-mcp"
