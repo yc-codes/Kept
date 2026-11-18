@@ -22,8 +22,8 @@ public struct SearchHit: Sendable {
 
 /// SQLite store with FTS5 full-text search. Safe to call from any thread.
 public final class Database: @unchecked Sendable {
-    private var db: OpaquePointer?
-    private let lock = NSRecursiveLock()
+    var db: OpaquePointer?
+    let lock = NSRecursiveLock()
 
     public init(url: URL, readOnly: Bool = false) throws {
         let flags = (readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) | SQLITE_OPEN_FULLMUTEX
@@ -86,6 +86,32 @@ public final class Database: @unchecked Sendable {
                 VALUES (new.pk, new.title, new.text, new.note, new.ocr, new.description);
             END;
             PRAGMA user_version = 1;
+            """)
+        }
+        if version < 2 {
+            // Connectors: each row is one signed-in source. `connection_seen` remembers what a source has
+            // already delivered, so an item the user deletes does not come back on the next sync.
+            try exec("""
+            BEGIN;
+            CREATE TABLE IF NOT EXISTS connections (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                name TEXT NOT NULL,
+                config TEXT NOT NULL DEFAULT '{}',
+                enabled INTEGER NOT NULL DEFAULT 1,
+                account TEXT,
+                created_at REAL NOT NULL,
+                last_sync REAL,
+                last_error TEXT,
+                imported INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS connection_seen (
+                connection TEXT NOT NULL REFERENCES connections(id) ON DELETE CASCADE,
+                key TEXT NOT NULL,
+                PRIMARY KEY (connection, key)
+            ) WITHOUT ROWID;
+            PRAGMA user_version = 2;
+            COMMIT;
             """)
         }
     }
@@ -194,13 +220,13 @@ public final class Database: @unchecked Sendable {
     // MARK: Plumbing
 
     /// Reads by byte length rather than as a C string, so text containing NUL is not cut short.
-    private static func string(_ s: OpaquePointer, _ i: Int32) -> String {
+    static func string(_ s: OpaquePointer, _ i: Int32) -> String {
         guard let bytes = sqlite3_column_blob(s, i) else { return "" }
         let count = Int(sqlite3_column_bytes(s, i))
         return String(decoding: UnsafeRawBufferPointer(start: bytes, count: count), as: UTF8.self)
     }
 
-    private static func optional(_ s: OpaquePointer, _ i: Int32) -> String? {
+    static func optional(_ s: OpaquePointer, _ i: Int32) -> String? {
         sqlite3_column_type(s, i) == SQLITE_NULL ? nil : string(s, i)
     }
 
@@ -218,7 +244,7 @@ public final class Database: @unchecked Sendable {
         )
     }
 
-    private func exec(_ sql: String) throws {
+    func exec(_ sql: String) throws {
         lock.lock(); defer { lock.unlock() }
         var error: UnsafeMutablePointer<CChar>?
         guard sqlite3_exec(db, sql, nil, nil, &error) == SQLITE_OK else {
@@ -247,7 +273,7 @@ public final class Database: @unchecked Sendable {
         return statement
     }
 
-    private func run(_ sql: String, _ params: [DBValue] = []) throws {
+    func run(_ sql: String, _ params: [DBValue] = []) throws {
         lock.lock(); defer { lock.unlock() }
         let statement = try prepare(sql, params)
         defer { sqlite3_finalize(statement) }
@@ -256,7 +282,7 @@ public final class Database: @unchecked Sendable {
         }
     }
 
-    private func query<T>(_ sql: String, _ params: [DBValue] = [], map: (OpaquePointer) -> T) throws -> [T] {
+    func query<T>(_ sql: String, _ params: [DBValue] = [], map: (OpaquePointer) -> T) throws -> [T] {
         lock.lock(); defer { lock.unlock() }
         let statement = try prepare(sql, params)
         defer { sqlite3_finalize(statement) }

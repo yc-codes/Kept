@@ -14,13 +14,14 @@ public enum ItemKind: String, CaseIterable, Sendable {
 }
 
 public enum CaptureMethod: String, Sendable {
-    case snip, clipboard, manual
+    case snip, clipboard, manual, connector
 
     public var label: String {
         switch self {
         case .snip: return "Region snip"
         case .clipboard: return "Copied"
         case .manual: return "Saved manually"
+        case .connector: return "Connector"
         }
     }
 }

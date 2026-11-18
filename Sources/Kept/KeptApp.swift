@@ -9,6 +9,7 @@ final class AppServices {
 
     let settings = CaptureSettings()
     let library: LibraryStore
+    let connectors: ConnectorCenter
     let clipboard: ClipboardMonitor
     let snipper: SnipService
     let quickPanel: QuickPanelController
@@ -20,7 +21,9 @@ final class AppServices {
     private init() {
         do {
             try KeptPaths.ensure()
-            library = LibraryStore(db: try Database(url: KeptPaths.database))
+            let db = try Database(url: KeptPaths.database)
+            library = LibraryStore(db: db)
+            connectors = ConnectorCenter(db: db, library: library)
         } catch {
             let alert = NSAlert()
             alert.messageText = "Kept could not open its library"
@@ -53,6 +56,7 @@ final class AppServices {
         NSApp.appearance = settings.theme.appearance
         clipboard.start()
         library.resumePendingOCR()
+        connectors.start()
         registerShortcuts()
         settings.onShortcutsChanged = { [weak self] in self?.registerShortcuts() }
         if !settings.didOnboard { library.showWelcome = true }
@@ -130,6 +134,7 @@ struct KeptApp: App {
         Settings {
             SettingsView()
                 .environmentObject(services.library)
+                .environmentObject(services.connectors)
                 .environmentObject(services.settings)
         }
 

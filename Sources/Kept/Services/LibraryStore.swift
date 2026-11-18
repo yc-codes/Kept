@@ -240,13 +240,13 @@ final class LibraryStore: ObservableObject {
         return accepted
     }
 
-    nonisolated private static func textTitle(_ string: String) -> String {
+    nonisolated static func textTitle(_ string: String) -> String {
         let line = string.split(whereSeparator: \.isNewline).first.map(String.init) ?? string
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         return trimmed.count > 80 ? String(trimmed.prefix(80)) + "…" : trimmed
     }
 
-    nonisolated private static func linkTitle(_ string: String) -> String {
+    nonisolated static func linkTitle(_ string: String) -> String {
         guard let url = URL(string: string), var host = url.host else { return string }
         if host.hasPrefix("www.") { host.removeFirst(4) }
         let path = url.path == "/" ? "" : url.path

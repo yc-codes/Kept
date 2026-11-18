@@ -30,11 +30,32 @@ Open the built app once, then choose **Share → Kept** in a Mac app to save a l
 |---|---|
 | `Sources/KeptCore` | Item model, SQLite + FTS5 store, image helpers. Shared by app and MCP server. |
 | `Sources/Kept/Services` | Capture settings, clipboard monitor, snip, global shortcuts, library store. |
+| `Sources/Kept/Connectors` | Connectors: sign in to a service and keep saving what you save there. |
 | `Sources/Kept/Views` | Library window, inspector, welcome flow, quick search panel, settings. |
 | `Sources/KeptMCP` | `kept-mcp`, a stdio MCP server (`search_library`, `get_item`, `list_recent`). |
 | `scripts/` | App bundle and icon build. |
 
 The library lives in `~/Library/Application Support/Kept` (`kept.sqlite`, `assets/`, `thumbs/`).
+
+## Connectors
+
+Settings › Connectors pulls in what you save elsewhere. Each connection has its own sign-in, so the same
+service can be added more than once (two GitHub accounts, several feeds). Kept syncs at launch and about
+every half hour, and only ever reads from the service.
+
+| Connector | Sign-in | Saves |
+|---|---|---|
+| GitHub Stars | Personal access token (read-only Starring) | Starred repositories, as links |
+| Raindrop.io | Test token from your Raindrop app settings | Bookmarks, as links |
+| RSS or Atom Feed | None | Feed entries, as links |
+
+Tokens live in the Keychain, never in the library. A connection remembers what it has delivered, so an
+item you delete does not come back, and a link already in the library is not saved twice.
+
+To add a connector, write one type conforming to `Connector` (`Connectors/Connector.swift`; copy one from
+`Connectors/BuiltIn`) and list it in `ConnectorRegistry.all`. It declares its sign-in fields and implements
+`verify` and `fetch`; the settings row, sign-in sheet, Keychain storage, scheduling and de-duplication come
+from the framework. Sign-in is by token or key for now; there is no browser (OAuth) sign-in yet.
 
 ## Connect an agent
 
@@ -53,6 +74,8 @@ Items are cited as `kept://item/<id>`, which opens the exact item in the library
   `@Local` (`Sources/Kept/Views/Local.swift`) instead so the package builds without Xcode.
 - `KEPT_HOME=<dir>` points the app and `kept-mcp` at a different library, and
   `KEPT_DEFAULTS_SUITE=<name>` isolates preferences. Use both for test runs.
+- With either of those set, connector sign-ins go to a separate Keychain service. `KEPT_GITHUB_API` and
+  `KEPT_RAINDROP_API` point those connectors at another server, such as a local test double.
 - `KEPT_SNAPSHOT_DIR=<dir>` makes the app render its windows to PNG and quit
   (see `Services/DebugSnapshot.swift`).
 

@@ -3,11 +3,16 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: CaptureSettings
+    @Local private var tab = DebugSnapshot.environment["KEPT_SNAPSHOT_TAB"] ?? "capture"
 
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             CaptureSettingsTab()
                 .tabItem { Label("Capture", systemImage: "tray.and.arrow.down") }
+                .tag("capture")
+            ConnectorSettingsTab()
+                .tabItem { Label("Connectors", systemImage: "point.3.connected.trianglepath.dotted") }
+                .tag("connectors")
             Picker("Theme", selection: $settings.theme) {
                 ForEach(AppTheme.allCases, id: \.self) { theme in
                     Text(theme.rawValue.capitalized).tag(theme)
@@ -16,10 +21,13 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
             .padding(24)
             .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
+            .tag("appearance")
             ShortcutSettingsTab()
                 .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                .tag("shortcuts")
             AgentSettingsTab()
                 .tabItem { Label("Agents", systemImage: "sparkles") }
+                .tag("agents")
         }
         .frame(width: 560)
     }
