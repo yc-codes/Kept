@@ -63,7 +63,7 @@ struct LibraryView: View {
         ) { item in
             Button("Delete", role: .destructive) { library.delete(item) }
         } message: { _ in
-            Text("The original, its note, and its search index entry are removed from this Mac.")
+            Text("This permanently removes the saved item and its note from Kept.")
         }
         .alert("Something went wrong", isPresented: errorBinding) {
             Button("OK", role: .cancel) {}
@@ -104,7 +104,10 @@ struct LibraryView: View {
     private var subtitle: String {
         let count = library.items.count
         let noun = count == 1 ? "item" : "items"
-        return library.searchText.isEmpty ? "\(count) \(noun)" : "\(count) matching \(noun)"
+        let itemCount = library.searchText.isEmpty
+            ? "\(count.formatted()) \(noun)"
+            : "\(count.formatted()) matching \(noun)"
+        return library.hasMoreItems ? "Showing the first \(itemCount)" : itemCount
     }
 
     private var content: some View {
@@ -198,7 +201,9 @@ struct LibraryView: View {
         } else if library.filter != .all {
             ContentUnavailableView(
                 "No \(library.filter.title)", systemImage: library.filter.symbol,
-                description: Text("Items you save will appear here."))
+                description: Text(library.filter == .favorites
+                    ? "Star an item to find it here."
+                    : "Items you save will appear here."))
         } else {
             VStack(spacing: 14) {
                 CaptureStack()

@@ -1,7 +1,6 @@
 // Draws the Kept app icon. Usage: swift scripts/make-icon.swift <output.png>
 //
-// The mark is a "K" built from a stem and a bookmark ribbon lying on its side: the ribbon's
-// notch forms the two arms of the letter.
+// A captured fragment is lifted out of a viewfinder.
 import AppKit
 
 let side: CGFloat = 1024
@@ -29,55 +28,61 @@ drop.shadowColor = NSColor.black.withAlphaComponent(0.30)
 drop.shadowBlurRadius = 26
 drop.shadowOffset = NSSize(width: 0, height: -12)
 drop.set()
-color(0xF2542D).setFill()
+color(0x242B3A).setFill()
 platePath.fill()
 NSGraphicsContext.restoreGraphicsState()
 
-// Warm plate: amber at the top falling to a deep coral.
-NSGradient(colors: [color(0xFFB938), color(0xFF7A3D), color(0xEE4B3A)], atLocations: [0, 0.55, 1], colorSpace: .deviceRGB)!
-    .draw(in: platePath, angle: -90)
+NSGradient(colors: [color(0x343E50), color(0x1B202D)])!.draw(in: platePath, angle: -90)
+platePath.lineWidth = 2
+color(0xCED8EA, 0.25).setStroke()
+platePath.stroke()
 
-// Soft highlight across the top edge.
-NSGraphicsContext.saveGraphicsState()
-platePath.addClip()
-NSGradient(colors: [NSColor.white.withAlphaComponent(0.28), NSColor.white.withAlphaComponent(0)])!
-    .draw(in: NSRect(x: 100, y: 610, width: 824, height: 314), angle: -90)
-NSGraphicsContext.restoreGraphicsState()
+// Three corners remain in place. The lifted fragment occupies the fourth.
+let finder = NSBezierPath()
+finder.lineWidth = 43
+finder.lineCapStyle = .round
+finder.lineJoinStyle = .round
 
-// The K. Glyph box is 430 x 500, optically centred.
-let box = NSRect(x: 304, y: 262, width: 430, height: 500)
-let stemWidth: CGFloat = 122
-let gap: CGFloat = 40
+func corner(from start: NSPoint, through elbow: NSPoint, to end: NSPoint) {
+    finder.move(to: start)
+    finder.line(to: elbow)
+    finder.line(to: end)
+}
 
-let glyph = NSBezierPath()
-glyph.append(NSBezierPath(
-    roundedRect: NSRect(x: box.minX, y: box.minY, width: stemWidth, height: box.height), xRadius: 34, yRadius: 34))
-
-// Ribbon with its notch pointing in from the right.
-let left = box.minX + stemWidth + gap
-let notch = NSPoint(x: left + 92, y: box.midY)
-let ribbon = NSBezierPath()
-ribbon.move(to: NSPoint(x: left, y: box.minY + 34))
-ribbon.curve(to: NSPoint(x: left + 34, y: box.minY), controlPoint1: NSPoint(x: left, y: box.minY + 15), controlPoint2: NSPoint(x: left + 15, y: box.minY))
-ribbon.line(to: NSPoint(x: box.maxX, y: box.minY))
-ribbon.line(to: notch)
-ribbon.line(to: NSPoint(x: box.maxX, y: box.maxY))
-ribbon.line(to: NSPoint(x: left + 34, y: box.maxY))
-ribbon.curve(to: NSPoint(x: left, y: box.maxY - 34), controlPoint1: NSPoint(x: left + 15, y: box.maxY), controlPoint2: NSPoint(x: left, y: box.maxY - 15))
-ribbon.close()
-glyph.append(ribbon)
+corner(from: NSPoint(x: 318, y: 567), through: NSPoint(x: 318, y: 693), to: NSPoint(x: 444, y: 693))
+corner(from: NSPoint(x: 318, y: 445), through: NSPoint(x: 318, y: 319), to: NSPoint(x: 444, y: 319))
+corner(from: NSPoint(x: 566, y: 319), through: NSPoint(x: 692, y: 319), to: NSPoint(x: 692, y: 445))
+color(0xF1E8D8).setStroke()
+finder.stroke()
 
 NSGraphicsContext.saveGraphicsState()
+let tilt = NSAffineTransform()
+tilt.translateX(by: 623, yBy: 629)
+tilt.rotate(byDegrees: -12)
+tilt.concat()
+
+// A cut corner gives the lifted fragment a distinct silhouette at Dock size.
+let fragment = NSBezierPath()
+fragment.move(to: NSPoint(x: -117, y: -89))
+fragment.line(to: NSPoint(x: -117, y: 117))
+fragment.line(to: NSPoint(x: 57, y: 117))
+fragment.line(to: NSPoint(x: 117, y: 57))
+fragment.line(to: NSPoint(x: 117, y: -117))
+fragment.line(to: NSPoint(x: -89, y: -117))
+fragment.close()
+
 let lift = NSShadow()
-lift.shadowColor = color(0x9C2A14, 0.45)
-lift.shadowBlurRadius = 22
-lift.shadowOffset = NSSize(width: 0, height: -10)
+lift.shadowColor = NSColor.black.withAlphaComponent(0.32)
+lift.shadowBlurRadius = 20
+lift.shadowOffset = NSSize(width: 0, height: -9)
+NSGraphicsContext.saveGraphicsState()
 lift.set()
-NSColor.white.setFill()
-glyph.fill()
+color(0xFFB17E).setFill()
+fragment.fill()
 NSGraphicsContext.restoreGraphicsState()
 
-NSGradient(colors: [NSColor.white, color(0xFFF1E4)])!.draw(in: glyph, angle: -90)
+NSGradient(colors: [color(0xFFD6A0), color(0xFF996D)])!.draw(in: fragment, angle: -90)
+NSGraphicsContext.restoreGraphicsState()
 
 NSGraphicsContext.restoreGraphicsState()
 try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: output))

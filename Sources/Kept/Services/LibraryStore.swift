@@ -9,6 +9,7 @@ final class LibraryStore: ObservableObject {
     let db: Database
 
     @Published private(set) var items: [Item] = []
+    private(set) var hasMoreItems = false
     @Published private(set) var counts: [ItemFilter: Int] = [:]
     @Published var filter: ItemFilter = .all {
         didSet {
@@ -54,7 +55,9 @@ final class LibraryStore: ObservableObject {
     }
 
     func reload() {
-        items = (try? db.items(filter: filter, search: searchText, limit: Self.listLimit)) ?? []
+        let results = (try? db.items(filter: filter, search: searchText, limit: Self.listLimit + 1)) ?? []
+        hasMoreItems = results.count > Self.listLimit
+        items = Array(results.prefix(Self.listLimit))
         counts = (try? db.counts()) ?? [:]
         if let selectedID, !items.contains(where: { $0.id == selectedID }), revealed?.id != selectedID {
             self.selectedID = nil
