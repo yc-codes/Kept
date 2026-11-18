@@ -1,0 +1,342 @@
+import AppKit
+import SwiftUI
+
+// Looping illustrations that show how Kept works. Drawn in SwiftUI rather than shipped as GIF files so
+// they stay sharp at any size, follow light and dark mode, and stop for Reduce Motion.
+
+/// Drives its content with a 0...1 progress value that repeats every `period` seconds.
+struct Loop<Content: View>: View {
+    let period: Double
+    /// Progress shown when Reduce Motion is on: a frame where the story has finished.
+    var resting = 0.85
+    @ViewBuilder let content: (Double) -> Content
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if reduceMotion {
+            content(resting)
+        } else {
+            TimelineView(.animation) { context in
+                content(context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period) / period)
+            }
+        }
+    }
+}
+
+/// Eased 0...1 ramp of `progress` between `start` and `end`.
+private func ramp(_ progress: Double, _ start: Double, _ end: Double) -> Double {
+    let x = min(max((progress - start) / (end - start), 0), 1)
+    return x * x * (3 - 2 * x)
+}
+
+private func mix(_ a: Double, _ b: Double, _ t: Double) -> Double { a + (b - a) * t }
+
+// MARK: Snip
+
+/// Drag over part of the screen; the snip lands on the clipboard and in the library.
+struct SnipDemo: View {
+    var body: some View {
+        Loop(period: 5.2) { p in
+            ZStack(alignment: .topLeading) {
+                screen
+                selection(p)
+                destination("doc.on.clipboard", "Clipboard", y: 14, p: p)
+                destination("tray.full", "Library", y: 92, p: p)
+                flyer(p, toY: 22)
+                flyer(p, toY: 100)
+                cursor(p)
+            }
+            .frame(width: 360, height: 168, alignment: .topLeading)
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Animation: dragging over part of the screen copies the snip and saves it to the library")
+    }
+
+    // The picture the demo snips, in screen coordinates.
+    private let photo = CGRect(x: 22, y: 46, width: 112, height: 78)
+
+    private var screen: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor))
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor))
+            HStack(spacing: 5) {
+                ForEach([Color.red, .yellow, .green], id: \.self) { color in
+                    Circle().fill(color.opacity(0.75)).frame(width: 7, height: 7)
+                }
+            }
+            .offset(x: 12, y: 12)
+            photoTile
+                .frame(width: photo.width, height: photo.height)
+                .offset(x: photo.minX, y: photo.minY)
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach([62.0, 48, 56, 34], id: \.self) { width in
+                    Capsule().fill(Color.secondary.opacity(0.25)).frame(width: width, height: 7)
+                }
+            }
+            .offset(x: 150, y: 52)
+        }
+        .frame(width: 232, height: 150)
+        .offset(y: 9)
+    }
+
+    private var photoTile: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(LinearGradient(colors: [.orange.opacity(0.85), .pink.opacity(0.8)], startPoint: .top, endPoint: .bottom))
+            Image(systemName: "mountain.2.fill")
+                .font(.system(size: 26))
+                .foregroundStyle(.white.opacity(0.9))
+        }
+    }
+
+    private func selection(_ p: Double) -> some View {
+        let grow = ramp(p, 0.10, 0.38)
+        let fade = 1 - ramp(p, 0.44, 0.52)
+        let target = photo.insetBy(dx: -7, dy: -7)
+        return RoundedRectangle(cornerRadius: 3)
+            .fill(Color.accentColor.opacity(0.14 + 0.5 * flash(p)))
+            .overlay {
+                RoundedRectangle(cornerRadius: 3)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+            }
+            .frame(width: max(target.width * grow, 0.1), height: max(target.height * grow, 0.1))
+            .offset(x: target.minX, y: target.minY + 9)
+            .opacity(grow > 0 ? fade : 0)
+    }
+
+    private func flash(_ p: Double) -> Double {
+        ramp(p, 0.38, 0.42) * (1 - ramp(p, 0.42, 0.48))
+    }
+
+    private func cursor(_ p: Double) -> some View {
+        let grow = ramp(p, 0.10, 0.38)
+        let target = photo.insetBy(dx: -7, dy: -7)
+        return Image(systemName: "plus")
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(Color.primary)
+            .offset(x: target.minX + target.width * grow - 7, y: target.minY + 9 + target.height * grow - 8)
+            .opacity((1 - ramp(p, 0.40, 0.46)) * ramp(p, 0.0, 0.05))
+    }
+
+    /// A copy of the snip travelling to one of the two destinations.
+    private func flyer(_ p: Double, toY: Double) -> some View {
+        let t = ramp(p, 0.46, 0.70)
+        let scale = mix(1, 0.3, t)
+        return photoTile
+            .frame(width: photo.width, height: photo.height)
+            .scaleEffect(scale, anchor: .topLeading)
+            .offset(x: mix(photo.minX, 286, t), y: mix(photo.minY + 9, toY, t))
+            .opacity(t > 0 ? 1 - ramp(p, 0.66, 0.72) : 0)
+    }
+
+    private func destination(_ symbol: String, _ title: String, y: Double, p: Double) -> some View {
+        let landed = ramp(p, 0.68, 0.76) * (1 - ramp(p, 0.94, 1.0))
+        return VStack(spacing: 4) {
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: symbol)
+                    .font(.system(size: 20))
+                    .foregroundStyle(landed > 0.5 ? Color.accentColor : Color.secondary)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white, .green)
+                    .scaleEffect(landed)
+                    .offset(x: 7, y: 4)
+            }
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 84, height: 62)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(landed > 0.5 ? Color.accentColor.opacity(0.6) : Color(nsColor: .separatorColor))
+        }
+        .offset(x: 268, y: y)
+    }
+}
+
+// MARK: Shortcut
+
+/// Key caps for a shortcut, pressed together in a loop.
+struct ShortcutDemo: View {
+    let shortcut: Shortcut
+    let caption: String
+
+    private var keys: [String] {
+        var modifiers: [String] = []
+        var rest = ""
+        for character in shortcut.display {
+            if "⌃⌥⇧⌘".contains(character) { modifiers.append(String(character)) } else { rest.append(character) }
+        }
+        return modifiers + (rest.isEmpty ? [] : [rest])
+    }
+
+    var body: some View {
+        Loop(period: 2.8, resting: 0) { p in
+            let down = ramp(p, 0.18, 0.26) * (1 - ramp(p, 0.46, 0.56))
+            HStack(spacing: 10) {
+                HStack(spacing: 5) {
+                    ForEach(keys, id: \.self) { key in
+                        Text(key)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .frame(minWidth: 30, minHeight: 30)
+                            .padding(.horizontal, key.count > 1 ? 8 : 0)
+                            .background {
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .fill(Color(nsColor: .controlBackgroundColor))
+                                    .shadow(color: .black.opacity(0.25), radius: 0, y: 2 - 2 * down)
+                            }
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .strokeBorder(down > 0.5 ? Color.accentColor : Color(nsColor: .separatorColor))
+                            }
+                            .offset(y: 2 * down)
+                    }
+                }
+                Image(systemName: "arrow.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                Text(caption)
+                    .font(.callout)
+                    .foregroundStyle(down > 0.5 ? Color.primary : Color.secondary)
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("\(shortcut.display): \(caption)")
+    }
+}
+
+/// A small stack of saved media, shared by onboarding and the empty library.
+struct CaptureStack: View {
+    var body: some View {
+        ZStack {
+            tile("text.alignleft", background: LibraryPalette.surface, ink: .secondary)
+                .rotationEffect(.degrees(-14))
+                .offset(x: -48, y: 7)
+            tile("link", background: LibraryPalette.selection, ink: .primary)
+                .rotationEffect(.degrees(15))
+                .offset(x: 48, y: 4)
+            tile("viewfinder", background: Color(red: 0.85, green: 0.31, blue: 0.18), ink: .white)
+                .rotationEffect(.degrees(-5))
+        }
+        .frame(width: 210, height: 110)
+        .accessibilityHidden(true)
+    }
+
+    private func tile(_ symbol: String, background: Color, ink: Color) -> some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(background)
+            .overlay {
+                RoundedRectangle(cornerRadius: 12).strokeBorder(LibraryPalette.line)
+            }
+            .overlay {
+                Image(systemName: symbol).font(.system(size: 30, weight: .medium)).foregroundStyle(ink)
+            }
+            .frame(width: 78, height: 80)
+    }
+}
+
+// MARK: Agent
+
+/// A question asked in an agent, answered with a saved item.
+struct AgentDemo: View {
+    private let question = "Which screenshot did I save for onboarding?"
+
+    var body: some View {
+        Loop(period: 8, resting: 0.8) { p in
+            let typed = Int(Double(question.count) * ramp(p, 0.04, 0.34))
+            let thinking = ramp(p, 0.36, 0.40) * (1 - ramp(p, 0.52, 0.56))
+            let answer = ramp(p, 0.54, 0.62) * (1 - ramp(p, 0.95, 1.0))
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Spacer(minLength: 40)
+                    Text(String(question.prefix(max(typed, 1))))
+                        .font(.callout)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                ZStack(alignment: .topLeading) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "sparkles")
+                        Text("Searching Kept…")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .opacity(thinking)
+
+                    HStack(spacing: 10) {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(LinearGradient(colors: [.orange.opacity(0.85), .pink.opacity(0.8)], startPoint: .top, endPoint: .bottom))
+                            .frame(width: 48, height: 36)
+                            .overlay {
+                                Image(systemName: "rectangle.split.3x1")
+                                    .foregroundStyle(.white.opacity(0.9))
+                            }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Snip from Safari")
+                                .font(.callout.weight(.medium))
+                            Text("“Try this layout for the onboarding screen”")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("kept://item/k7vdrd9be")
+                                .font(.system(.caption2, design: .monospaced))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    .padding(8)
+                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color(nsColor: .separatorColor))
+                    }
+                    .opacity(answer)
+                    .offset(y: 6 * (1 - answer))
+                }
+                .frame(height: 56, alignment: .topLeading)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity)
+            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color(nsColor: .separatorColor))
+            }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Animation: asking an agent a question returns the matching saved item with a link")
+    }
+}
+
+// MARK: Animated GIFs
+
+/// Plays an animated GIF from disk. SwiftUI's `Image` only shows the first frame.
+struct AnimatedImage: NSViewRepresentable {
+    let url: URL
+
+    func makeNSView(context: Context) -> NSImageView {
+        let view = NSImageView()
+        view.imageScaling = .scaleProportionallyUpOrDown
+        view.animates = true
+        view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        return view
+    }
+
+    func updateNSView(_ view: NSImageView, context: Context) {
+        if context.coordinator.url != url {
+            context.coordinator.url = url
+            view.image = NSImage(contentsOf: url)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator {
+        var url: URL?
+    }
+}
