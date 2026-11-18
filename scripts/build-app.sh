@@ -45,4 +45,8 @@ codesign --force --sign "${KEPT_SIGN_IDENTITY:--}" --entitlements ShareExtension
 codesign --force --sign "${KEPT_SIGN_IDENTITY:--}" --identifier app.kept.Kept "$APP/Contents/MacOS/kept-mcp"
 codesign --force --sign "${KEPT_SIGN_IDENTITY:--}" "$APP"
 
+# Finder and the Dock cache icons per app path. Re-registering the fresh bundle makes them drop a stale one.
+touch "$APP"
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" || true
+
 echo "Built $APP"
