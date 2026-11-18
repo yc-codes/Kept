@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Kept is a local-first capture library for macOS. Save screen snips, images, links, and text, then find them again with OCR search.">
+  <meta name="theme-color" content="#151513">
+  <title>Kept — A capture library for Mac</title>
+  <link rel="icon" href="assets/kept-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="shell top" id="top">
+    <a class="brand" href="#top"><img src="assets/kept-icon.png" width="35" height="35" alt="">Kept</a>
+    <nav aria-label="Main navigation">
+      <a href="#workflow">Workflow</a>
+      <a href="#demo">Demo</a>
+      <a href="#agents">Agents</a>
+    </nav>
+    <div class="top-actions">
+      <button class="theme" type="button" aria-label="Switch to light theme"><span aria-hidden="true">☼</span></button>
+      <a class="small-button" href="#get-kept">Get Kept <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main id="main">
+    <section class="shell hero" aria-labelledby="headline">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> A CAPTURE LIBRARY FOR MAC</p>
+        <h1 id="headline">Keep what<br> <em>catches your eye.</em></h1>
+        <p class="intro">Snip your screen, save what you copy, and find it all again in a private library on your Mac.</p>
+        <div class="actions">
+          <a class="button primary" href="#get-kept">Get Kept for Mac <span aria-hidden="true">↗</span></a>
+          <a class="button secondary" href="#demo">Try the demo <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+      <figure class="showcase">
+        <div class="stage">
+          <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+          <picture class="app-window">
+            <img id="library-shot" src="assets/library-dark.webp" alt="Kept’s native library window showing a grid of saved images, links, and text beside its category sidebar." width="1550" height="989" fetchpriority="high">
+          </picture>
+        </div>
+        <figcaption><span><i></i> THE KEPT LIBRARY</span><span>MACOS 14+</span></figcaption>
+      </figure>
+    </section>
+
+    <section id="workflow" class="shell section">
+      <p class="eyebrow"><span></span> WORKFLOW</p>
+      <h2>From caught to found.</h2>
+      <div class="features">
+        <article><div class="feature-mark" aria-hidden="true">⌗</div><h3>Snip and keep moving.</h3><p>Press <kbd>⌃⌥S</kbd> to grab a region. Kept copies it to your clipboard and saves it once in your library.</p></article>
+        <article><div class="feature-mark" aria-hidden="true">▤</div><h3>Give it some context.</h3><p>Opt in to clipboard capture for images, links, or text. Add a note or favorite an item so you can come back to it.</p></article>
+        <article><div class="feature-mark" aria-hidden="true">⌕</div><h3>Find the words in it.</h3><p>Search your notes, copied text, and words inside images. Press <kbd>⌃⌥K</kbd> to open Quick Search from anywhere.</p></article>
+      </div>
+    </section>
+
+    <section id="demo" class="shell section">
+      <p class="eyebrow"><span></span> INTERACTIVE DEMO</p>
+      <h2>Find a little something.</h2>
+      <p class="section-intro">Explore a sample Kept library. Try searching for “ridge” to match a note or “studio” to find a text clip.</p>
+      <div class="demo">
+        <div class="demo-toolbar">
+          <strong><img src="assets/kept-icon.png" width="26" height="26" alt=""> Sample library</strong>
+          <input id="search" type="search" aria-label="Search sample library" placeholder="Search sample library…">
+        </div>
+        <div class="filters" aria-label="Filter sample library">
+          <button type="button" data-filter="all" aria-pressed="true">All items</button>
+          <button type="button" data-filter="image" aria-pressed="false">Images</button>
+          <button type="button" data-filter="link" aria-pressed="false">Links</button>
+          <button type="button" data-filter="text" aria-pressed="false">Text</button>
+          <button type="button" data-filter="favorites" aria-pressed="false">Favorites</button>
+        </div>
+        <p id="result-count" role="status"></p>
+        <div id="results" class="results"></div>
+        <noscript><p>Enable JavaScript to search and filter the sample library.</p></noscript>
+      </div>
+      <details class="native-preview">
+        <summary>See Quick Search in the Mac app</summary>
+        <img src="assets/quick-search.webp" alt="Kept’s floating Quick Search panel with recent captures and shortcuts to copy a result or open it in the library." width="1000" height="647" loading="lazy">
+      </details>
+      <dialog id="item-dialog" aria-labelledby="item-title">
+        <form method="dialog"><button class="theme close" aria-label="Close capture">×</button></form>
+        <div id="item-detail"></div>
+      </dialog>
+    </section>
+
+    <section id="agents" class="shell section">
+      <div class="agent-panel">
+        <div>
+          <p class="eyebrow"><span></span> LOCAL BY DESIGN</p>
+          <h2>Your library lives on your Mac.</h2>
+          <p>Kept stores captures and its search index in a local SQLite library with image files alongside it. Connect Claude Code or Codex through Kept’s read-only MCP server to search and open saved items.</p>
+        </div>
+        <div class="terminal">
+          <p>KEPT MCP <span>READ-ONLY</span></p>
+          <ul><li><code>search_library</code></li><li><code>get_item</code></li><li><code>list_recent</code></li></ul>
+          <small>Setup commands are in Settings → Agents.</small>
+        </div>
+      </div>
+    </section>
+
+    <section id="get-kept" class="shell section get">
+      <img src="assets/kept-icon.png" width="74" height="74" alt="">
+      <h2>Make it yours.</h2>
+      <p>Build Kept on macOS 14 or later with the Xcode Command Line Tools and Swift 6. Repository access is required.</p>
+      <a class="button primary" href="https://github.com/yc-codes/Kept#build-and-run">View build instructions <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+  <footer class="shell footer"><a class="brand" href="#top"><img src="assets/kept-icon.png" width="30" height="30" alt="">Kept</a><span>A local-first capture library for Mac.</span><a href="#top">Back to top ↑</a></footer>
+  <template id="capture-template"><button class="capture" type="button"><div class="capture-preview"></div><span class="capture-kind"></span><strong></strong></button></template>
+</body>
+</html>

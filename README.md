@@ -65,3 +65,15 @@ and animate in the inspector.
 
 The in-app illustrations (`Views/Illustrations.swift`) are drawn in SwiftUI rather than shipped as
 image files, so they follow light and dark mode and stop when Reduce Motion is on.
+
+## Website
+
+The product website lives in `website/`. To preview it locally with Python 3:
+
+```sh
+python3 -m http.server 4173 --directory website
+```
+
+Open http://localhost:4173. The site is static and can be served directly from
+`website/`. The interactive demo uses sample data, and the library previews
+are screenshots from the native app with a separate sample library.
