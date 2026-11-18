@@ -1,8 +1,10 @@
 import AppKit
+import ScreenCaptureKit
 
 /// Region snip: drag a rectangle, the image lands on the clipboard and in the library exactly once.
 @MainActor
-final class SnipService {
+final class SnipService: NSObject, SCContentSharingPickerObserver {
+    private var pickerSource: NSRunningApplication?
     private let library: LibraryStore
     private var running = false
 
@@ -12,9 +14,21 @@ final class SnipService {
 
     func snip() {
         guard !running else { return }
-        guard ensureScreenRecordingAccess() else { return }
 
         let source = NSWorkspace.shared.frontmostApplication
+        if !CGPreflightScreenCaptureAccess() {
+            running = true
+            pickerSource = source
+            let picker = SCContentSharingPicker.shared
+            var configuration = SCContentSharingPickerConfiguration()
+            configuration.allowedPickerModes = [.singleDisplay]
+            picker.defaultConfiguration = configuration
+            picker.add(self)
+            picker.isActive = true
+            picker.present(using: .display)
+            return
+        }
+
         let file = FileManager.default.temporaryDirectory
             .appendingPathComponent("kept-snip-\(UUID().uuidString).png")
         let clipboardBefore = NSPasteboard.general.changeCount
@@ -39,11 +53,7 @@ final class SnipService {
         let pasteboard = NSPasteboard.general
 
         if let data = try? Data(contentsOf: file), !data.isEmpty {
-            // Clipboard first, so pasting works before the library has finished saving.
-            pasteboard.clearContents()
-            pasteboard.setData(data, forType: .png)
-            library.onOwnPasteboardWrite?()
-            library.ingest(.image(data), method: .snip, source: source, select: true)
+            save(data, source: source)
             return
         }
 
@@ -60,45 +70,65 @@ final class SnipService {
         library.ingest(.image(data), method: .snip, source: source, select: true)
     }
 
-    private func ensureScreenRecordingAccess() -> Bool {
-        if CGPreflightScreenCaptureAccess() { return true }
-
-        let defaults = KeptDefaults.store
-        if !defaults.bool(forKey: "askedScreenRecording") {
-            // First time: let the system prompt explain itself.
-            defaults.set(true, forKey: "askedScreenRecording")
-            if CGRequestScreenCaptureAccess() { return true }
-            return false
-        }
-
-        let alert = NSAlert()
-        alert.messageText = "Kept needs Screen Recording access to take snips"
-        alert.informativeText = """
-        Turn on Kept under System Settings › Privacy & Security › Screen & System Audio Recording, \
-        then reopen Kept. Kept only captures the region you drag over, when you press the snip shortcut.
-        """
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Reopen Kept")
-        alert.addButton(withTitle: "Cancel")
-        NSApp.activate(ignoringOtherApps: true)
-        switch alert.runModal() {
-        case .alertFirstButtonReturn:
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                NSWorkspace.shared.open(url)
-            }
-        case .alertSecondButtonReturn:
-            relaunch()
-        default:
-            break
-        }
-        return false
+    private func save(_ png: Data, source: NSRunningApplication?) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setData(png, forType: .png)
+        library.onOwnPasteboardWrite?()
+        library.ingest(.image(png), method: .snip, source: source, select: true)
     }
 
-    private func relaunch() {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", "sleep 0.6; /usr/bin/open \"$0\"", Bundle.main.bundlePath]
-        try? process.run()
-        NSApp.terminate(nil)
+    private func closePicker() {
+        SCContentSharingPicker.shared.remove(self)
+        SCContentSharingPicker.shared.isActive = false
+        pickerSource = nil
+        running = false
+    }
+
+    nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didCancelFor stream: SCStream?) {
+        Task { @MainActor in closePicker() }
+    }
+
+    nonisolated func contentSharingPickerStartDidFailWithError(_ error: Error) {
+        Task { @MainActor in
+            closePicker()
+            report(error)
+        }
+    }
+
+    private func report(_ error: Error) {
+        let nsError = error as NSError
+        if nsError.domain == SCStreamErrorDomain, nsError.code == SCStreamError.userDeclined.rawValue {
+            // macOS refused the capture. If Kept already shows as enabled in System Settings, the grant
+            // belongs to a differently signed copy of Kept and has to be given again to this one.
+            library.errorMessage = """
+            macOS is not allowing Kept to capture the screen. Open System Settings › Privacy & Security › \
+            Screen & System Audio Recording, turn Kept off and on again (or remove it with − and add this \
+            copy of Kept), then quit and reopen Kept.
+            """
+        } else {
+            library.errorMessage = "Kept could not take a snip. " + error.localizedDescription
+        }
+        AppServices.shared.showLibrary()
+    }
+
+    nonisolated func contentSharingPicker(_ picker: SCContentSharingPicker, didUpdateWith filter: SCContentFilter, for stream: SCStream?) {
+        Task { @MainActor in
+            defer { closePicker() }
+            let config = SCStreamConfiguration()
+            let scale = CGFloat(filter.pointPixelScale)
+            config.width = Int((filter.contentRect.width * scale).rounded())
+            config.height = Int((filter.contentRect.height * scale).rounded())
+            config.showsCursor = false
+            do {
+                let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+                if let crop = SnipCropView.select(in: image),
+                   let data = NSBitmapImageRep(cgImage: crop).representation(using: .png, properties: [:]) {
+                    save(data, source: pickerSource)
+                }
+            } catch {
+                report(error)
+            }
+        }
     }
 }

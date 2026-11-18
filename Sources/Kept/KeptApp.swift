@@ -152,9 +152,18 @@ private struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
+    private static let mark: NSImage = {
+        let image = Bundle.main.image(forResource: "KeptMenu") ?? NSApp.applicationIconImage!
+        let mark = image.copy() as! NSImage
+        mark.size = NSSize(width: 18, height: 18)
+        mark.isTemplate = true
+        return mark
+    }()
+
     var body: some View {
-        Image(systemName: paused ? "tray" : "tray.full")
-            .accessibilityLabel("Kept")
+        Image(nsImage: Self.mark)
+            .opacity(paused ? 0.6 : 1)
+            .accessibilityLabel(paused ? "Kept, clipboard capture paused" : "Kept")
             .onAppear {
                 AppServices.shared.openLibraryWindow = { openWindow(id: "library") }
                 AppServices.shared.openSettingsWindow = { openSettings() }

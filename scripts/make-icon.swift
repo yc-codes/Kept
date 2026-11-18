@@ -3,7 +3,8 @@
 // A captured fragment is lifted out of a viewfinder.
 import AppKit
 
-let side: CGFloat = 1024
+let menuMark = CommandLine.arguments.contains("--menu-mark")
+let side: CGFloat = menuMark ? 36 : 1024
 let output = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "icon.png"
 
 let rep = NSBitmapImageRep(
@@ -19,23 +20,30 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
 }
 
 // Standard macOS icon grid: an 824pt rounded square centred on a 1024pt canvas.
-let plate = NSRect(x: 100, y: 100, width: 824, height: 824)
-let platePath = NSBezierPath(roundedRect: plate, xRadius: 186, yRadius: 186)
+if menuMark {
+    let fit = NSAffineTransform()
+    fit.scale(by: 0.072)
+    fit.translateX(by: -276, yBy: -274)
+    fit.concat()
+} else {
+    let plate = NSRect(x: 100, y: 100, width: 824, height: 824)
+    let platePath = NSBezierPath(roundedRect: plate, xRadius: 186, yRadius: 186)
 
-NSGraphicsContext.saveGraphicsState()
-let drop = NSShadow()
-drop.shadowColor = NSColor.black.withAlphaComponent(0.30)
-drop.shadowBlurRadius = 26
-drop.shadowOffset = NSSize(width: 0, height: -12)
-drop.set()
-color(0x242B3A).setFill()
-platePath.fill()
-NSGraphicsContext.restoreGraphicsState()
+    NSGraphicsContext.saveGraphicsState()
+    let drop = NSShadow()
+    drop.shadowColor = NSColor.black.withAlphaComponent(0.30)
+    drop.shadowBlurRadius = 26
+    drop.shadowOffset = NSSize(width: 0, height: -12)
+    drop.set()
+    color(0x242B3A).setFill()
+    platePath.fill()
+    NSGraphicsContext.restoreGraphicsState()
 
-NSGradient(colors: [color(0x343E50), color(0x1B202D)])!.draw(in: platePath, angle: -90)
-platePath.lineWidth = 2
-color(0xCED8EA, 0.25).setStroke()
-platePath.stroke()
+    NSGradient(colors: [color(0x343E50), color(0x1B202D)])!.draw(in: platePath, angle: -90)
+    platePath.lineWidth = 2
+    color(0xCED8EA, 0.25).setStroke()
+    platePath.stroke()
+}
 
 // Three corners remain in place. The lifted fragment occupies the fourth.
 let finder = NSBezierPath()
@@ -71,17 +79,22 @@ fragment.line(to: NSPoint(x: 117, y: -117))
 fragment.line(to: NSPoint(x: -89, y: -117))
 fragment.close()
 
-let lift = NSShadow()
-lift.shadowColor = NSColor.black.withAlphaComponent(0.32)
-lift.shadowBlurRadius = 20
-lift.shadowOffset = NSSize(width: 0, height: -9)
-NSGraphicsContext.saveGraphicsState()
-lift.set()
-color(0xFFB17E).setFill()
-fragment.fill()
-NSGraphicsContext.restoreGraphicsState()
+if menuMark {
+    NSColor.black.setFill()
+    fragment.fill()
+} else {
+    let lift = NSShadow()
+    lift.shadowColor = NSColor.black.withAlphaComponent(0.32)
+    lift.shadowBlurRadius = 20
+    lift.shadowOffset = NSSize(width: 0, height: -9)
+    NSGraphicsContext.saveGraphicsState()
+    lift.set()
+    color(0xFFB17E).setFill()
+    fragment.fill()
+    NSGraphicsContext.restoreGraphicsState()
 
-NSGradient(colors: [color(0xFFD6A0), color(0xFF996D)])!.draw(in: fragment, angle: -90)
+    NSGradient(colors: [color(0xFFD6A0), color(0xFF996D)])!.draw(in: fragment, angle: -90)
+}
 NSGraphicsContext.restoreGraphicsState()
 
 NSGraphicsContext.restoreGraphicsState()

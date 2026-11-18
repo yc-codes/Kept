@@ -16,9 +16,16 @@ scripts/build-app.sh        # builds build/Kept.app
 open build/Kept.app
 ```
 
-The build is ad-hoc signed. macOS ties Screen Recording permission to the signature, so it asks again
-after every rebuild. To keep the permission, sign with a stable identity:
-`KEPT_SIGN_IDENTITY="Apple Development: …" scripts/build-app.sh`.
+With Screen Recording access, Snip opens the macOS region selector directly. Without that access,
+choose a display in the system sharing picker, then drag over the preview to save a region.
+
+macOS ties the Screen Recording grant to the app's signature. The build script signs with a
+self-signed identity it creates on first build in `~/Library/Developer/Kept/kept-signing.keychain-db`
+(its own keychain file, not your login keychain), so the grant survives rebuilds. Grant access once
+per Mac; if that keychain file is deleted, a new identity is created and macOS asks once more.
+If System Settings shows Kept enabled but snips are still refused, the grant belongs to an older
+signature: turn Kept off and on there (or remove and re-add it), then reopen Kept.
+To sign with your own identity instead: `KEPT_SIGN_IDENTITY="Apple Development: …" scripts/build-app.sh`.
 
 ## Share to Kept
 

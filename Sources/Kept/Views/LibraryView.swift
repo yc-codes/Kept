@@ -162,34 +162,21 @@ struct LibraryView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            HStack(spacing: 0) {
-                Button {
-                    AppServices.shared.snip()
-                } label: {
-                    Label("Take snip", systemImage: "camera.viewfinder")
-                        .padding(.horizontal, 12)
-                        .frame(height: 32)
-                }
-                .buttonStyle(.plain)
-                .help("Take a snip (\(settings.snipShortcut.display))")
-                Rectangle().fill(.white.opacity(0.35)).frame(width: 1, height: 16)
-                Menu {
-                    Button("Save Clipboard", systemImage: "doc.on.clipboard") { library.saveClipboard() }
-                    Button("Import Images…", systemImage: "photo.on.rectangle") { library.showImportPanel() }
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .foregroundStyle(.white)
-                        .frame(width: 28, height: 32)
-                }
-                .tint(.white)
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .accessibilityLabel("More capture options")
+            Menu {
+                Button("Save Clipboard", systemImage: "doc.on.clipboard") { library.saveClipboard() }
+                Button("Import Images…", systemImage: "photo.on.rectangle") { library.showImportPanel() }
+            } label: {
+                Label("Take Snip", systemImage: "camera.viewfinder")
+                    .font(.callout.weight(.semibold))
+            } primaryAction: {
+                AppServices.shared.snip()
             }
-            .font(.callout.weight(.semibold))
-            .foregroundStyle(.white)
-            .background(Color(red: 0.68, green: 0.23, blue: 0.13), in: RoundedRectangle(cornerRadius: 8))
+            .menuStyle(.button)
+            .buttonStyle(.borderedProminent)
+            .tint(LibraryPalette.accent)
+            .controlSize(.large)
+            .fixedSize()
+            .help("Take a snip (\(settings.snipShortcut.display)), or open the menu for more capture options")
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 18)
