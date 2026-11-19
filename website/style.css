@@ -149,3 +149,33 @@ dialog::backdrop { background: #161411b8; }
 .native-preview summary:hover { color: var(--accent); }
 .native-preview img { width: min(100%, 660px); height: auto; margin-top: 9px; border: 1px solid var(--line); border-radius: 10px; }
 #item-detail .capture-kind { margin: 0 0 14px; }
+
+.hero {
+  padding-block: clamp(32px, 5vw, 74px);
+  border-bottom: 1px solid var(--line);
+}
+.hero-copy { padding-top: 0; }
+.stage {
+  background: linear-gradient(120deg, #30283122, #442d3020), url("assets/coast.webp") center / cover;
+  padding: 10% 7%;
+}
+.film-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 30px; }
+.film-heading h2 { margin: 0; }
+.film-heading a { font-size: 14px; color: var(--accent); padding-block: 6px; white-space: nowrap; }
+.film-heading a:hover { text-decoration: underline; }
+.film-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.film-grid video { display: block; width: 100%; height: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.film-grid h3 { margin: 18px 0 6px; }
+.film-grid p { margin: 0; max-width: 48ch; line-height: 1.55; color: var(--muted); }
+@media (min-width: 920px) {
+  .hero { display: grid; grid-template-columns: 0.82fr 1.18fr; align-items: center; gap: clamp(20px, 3vw, 50px); }
+  .hero-copy { text-align: left; padding: 0 0 18px; }
+  .hero h1 { font-size: clamp(68px, 6.25vw, 92px); }
+  .hero h1 em { letter-spacing: -.068em; }
+  .intro { margin-left: 0; }
+  .actions { justify-content: flex-start; }
+}
+@media (max-width: 760px) {
+  .film-grid { grid-template-columns: 1fr; gap: 30px; }
+  .film-heading { align-items: start; flex-direction: column; gap: 8px; }
+}
