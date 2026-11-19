@@ -1,0 +1,66 @@
+name: Kept builds
+
+on:
+  push:
+    branches: ['**']
+    tags: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: ${{ !github.event.deleted }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run macOS service tests
+        run: scripts/test.sh
+
+      - name: Build and archive Kept
+        env:
+          KEPT_SIGN_IDENTITY: '-'
+          ARCH: ${{ matrix.arch }}
+        run: |
+          test "$(uname -m)" = "$ARCH"
+          scripts/build-app.sh
+          codesign --verify --deep --strict build/Kept.app
+          ditto -c -k --keepParent build/Kept.app "build/Kept-macOS-$ARCH.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kept-${{ github.ref_type == 'tag' && 'stable' || 'nightly' }}-${{ matrix.arch }}-${{ github.sha }}
+          path: build/Kept-macOS-${{ matrix.arch }}.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    if: github.ref_type == 'tag' && github.event.created
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Kept-stable-*
+          merge-multiple: true
+          path: dist
+
+      - name: Publish stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes \
+            -- "$GITHUB_REF_NAME" dist/Kept-macOS-arm64.zip dist/Kept-macOS-x86_64.zip
