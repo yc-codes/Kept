@@ -83,7 +83,7 @@ enum ClipboardReader {
 /// Watches the general pasteboard. Does nothing unless a clipboard source is enabled and capture is not paused.
 @MainActor
 final class ClipboardMonitor {
-    private let pasteboard = NSPasteboard.general
+    private let pasteboard: NSPasteboard
     private let library: LibraryStore
     private let settings: CaptureSettings
     private var lastChangeCount: Int
@@ -96,9 +96,10 @@ final class ClipboardMonitor {
     /// Change count of a write Kept made itself (snips, "Copy"), so it is not captured twice.
     var ownChangeCount = -1
 
-    init(library: LibraryStore, settings: CaptureSettings) {
+    init(library: LibraryStore, settings: CaptureSettings, pasteboard: NSPasteboard = .general) {
         self.library = library
         self.settings = settings
+        self.pasteboard = pasteboard
         lastChangeCount = pasteboard.changeCount
     }
 
@@ -128,7 +129,10 @@ final class ClipboardMonitor {
         // Everything that was in front during this interval; afterwards only the current app carries over.
         let candidates = recentApps
         if let last = recentApps.last { recentApps = [last] }
+        processChanges(from: candidates)
+    }
 
+    func processChanges(from candidates: [NSRunningApplication]) {
         let count = pasteboard.changeCount
         guard count != lastChangeCount else { return }
         lastChangeCount = count

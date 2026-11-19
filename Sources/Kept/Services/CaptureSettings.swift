@@ -42,12 +42,12 @@ final class CaptureSettings: ObservableObject {
         "com.nordpass.macos.nordpass", "com.keepersecurity.passwordmanager",
     ]
 
-    private let defaults = KeptDefaults.store
+    private let defaults: UserDefaults
 
     @Published var theme: AppTheme {
         didSet {
             defaults.set(theme.rawValue, forKey: "theme")
-            NSApp.appearance = theme.appearance
+            NSApp?.appearance = theme.appearance
         }
     }
 
@@ -65,7 +65,8 @@ final class CaptureSettings: ObservableObject {
 
     var onShortcutsChanged: (() -> Void)?
 
-    init() {
+    init(defaults: UserDefaults = KeptDefaults.store) {
+        self.defaults = defaults
         theme = defaults.string(forKey: "theme").flatMap(AppTheme.init(rawValue:)) ?? .system
         captureImages = defaults.bool(forKey: "captureImages")
         captureLinks = defaults.bool(forKey: "captureLinks")

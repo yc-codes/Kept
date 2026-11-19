@@ -27,6 +27,13 @@ If System Settings shows Kept enabled but snips are still refused, the grant bel
 signature: turn Kept off and on there (or remove and re-add it), then reopen Kept.
 To sign with your own identity instead: `KEPT_SIGN_IDENTITY="Apple Development: …" scripts/build-app.sh`.
 
+## Nightly builds and stable releases
+
+Every branch push runs the macOS service tests and builds Kept for Apple silicon and Intel.
+Download the matching nightly artifact from the **Kept builds** run in the Actions tab.
+Pushing a new tag (for example, `v0.1.0`) publishes both app archives under **Releases**
+after both builds pass. CI uses ad-hoc signing without Apple notarization.
+
 ## Share to Kept
 
 Open the built app once, then choose **Share → Kept** in a Mac app to save a link, selected text, or an image. Share one item at a time. If Kept is hidden, enable it in the Share menu’s extension settings. Sharing works even when clipboard capture is paused.
@@ -85,6 +92,28 @@ Items are cited as `kept://item/<id>`, which opens the exact item in the library
   `KEPT_RAINDROP_API` point those connectors at another server, such as a local test double.
 - `KEPT_SNAPSHOT_DIR=<dir>` makes the app render its windows to PNG and quit
   (see `Services/DebugSnapshot.swift`).
+
+## Tests
+
+Run the macOS tests from a logged-in desktop session. They use temporary libraries and named
+pasteboards. Connector tests use a local HTTP fixture and synthetic Keychain entries that they remove.
+
+```sh
+scripts/test.sh                         # service, storage, OCR, connector, and MCP tests
+scripts/build-app.sh
+scripts/test-native-ui.py               # render and check the bundled app's windows
+npx playwright install chromium
+scripts/test-website.sh                 # browser interaction and randomized demo tests
+```
+
+Set `KEPT_TEST_CHROME` to an installed Chrome executable to run the website suite without
+installing Playwright's Chromium. Use `KEPT_TEST_SEED=42` to replay one storage or website sequence.
+The service runner prints confirmed defects as `KNOWN ISSUE`. Set `KEPT_TEST_STRICT=1` to make those
+reproductions fail the run.
+
+Native window checks cover all five Settings tabs, connector sheets, onboarding, library views,
+the inspector, and Quick Search. Interactive macOS checks such as global shortcut delivery, the
+screen picker, and sharing from a host app require a separate desktop pass.
 
 ## Not built yet
 

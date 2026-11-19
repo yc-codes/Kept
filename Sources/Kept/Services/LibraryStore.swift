@@ -7,6 +7,7 @@ import Vision
 @MainActor
 final class LibraryStore: ObservableObject {
     let db: Database
+    private let pasteboard: NSPasteboard
 
     @Published private(set) var items: [Item] = []
     private(set) var hasMoreItems = false
@@ -42,8 +43,9 @@ final class LibraryStore: ObservableObject {
     private let work = DispatchQueue(label: "kept.ingest", qos: .userInitiated)
     private static let listLimit = 5000
 
-    init(db: Database) {
+    init(db: Database, pasteboard: NSPasteboard = .general) {
         self.db = db
+        self.pasteboard = pasteboard
         Self.clearPreviewFiles()
         reload()
     }
@@ -160,7 +162,7 @@ final class LibraryStore: ObservableObject {
 
     /// Deliberately saves whatever is on the clipboard, regardless of the passive capture switches.
     func saveClipboard() {
-        guard let content = ClipboardReader.read(.general, images: true, links: true, text: true) else {
+        guard let content = ClipboardReader.read(pasteboard, images: true, links: true, text: true) else {
             NSSound.beep()
             return
         }
@@ -366,7 +368,6 @@ final class LibraryStore: ObservableObject {
     /// Puts the item on the clipboard. Returns false, leaving the clipboard alone, if it cannot be read.
     @discardableResult
     func copy(_ item: Item) -> Bool {
-        let pasteboard = NSPasteboard.general
         switch item.kind {
         case .image:
             guard let url = item.assetURL, let data = try? Data(contentsOf: url) else {
@@ -400,8 +401,12 @@ final class LibraryStore: ObservableObject {
         }
     }
 
-    private static let previewDirectory = FileManager.default.temporaryDirectory
-        .appendingPathComponent("KeptPreview", isDirectory: true)
+    private static let previewDirectory: URL = {
+        if let home = ProcessInfo.processInfo.environment["KEPT_HOME"], !home.isEmpty {
+            return KeptPaths.root.appendingPathComponent("previews", isDirectory: true)
+        }
+        return FileManager.default.temporaryDirectory.appendingPathComponent("KeptPreview", isDirectory: true)
+    }()
 
     private static func previewFile(for id: String) -> URL {
         previewDirectory.appendingPathComponent(id + ".txt")
