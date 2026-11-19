@@ -29,9 +29,10 @@ struct ItemPreview: View {
     var body: some View {
         switch item.kind {
         case .image:
-            ThumbnailView(item: item, contentMode: .fill)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(LibraryPalette.inset)
+            LibraryPalette.inset
+                .overlay {
+                    ThumbnailView(item: item, contentMode: .fill)
+                }
                 .clipped()
         case .text:
             Group {
