@@ -1,142 +1,168 @@
 # Kept
 
-A local-first capture library for Mac. Snip part of the screen and keep working: the snip is on your
-clipboard and saved once in your library. Optionally keep copied images, links and text. Add your own
-note to anything, search it all (including text inside images), and let Claude Code or Codex look
-things up through a read-only MCP server.
+Kept is a local-first capture library for macOS. Take a screen snip and paste it immediately while
+Kept saves a copy in your library. You can also save images, links, and text, add your own notes,
+and search the text inside screenshots.
 
-Product background: `../mac-capture-library-brief.md`.
+![The Kept library showing a grid of saved captures and category filters in the sidebar](website/assets/library-light.webp)
 
 ## Build and run
 
-Needs only the Xcode Command Line Tools (Swift 6, macOS 14+ SDK).
+Kept runs on macOS 14 or later. Building from source requires the **Xcode Command Line Tools with
+Swift 6 or later**. Run `xcode-select --install` if you need to install the tools.
+
+Run these commands from the repository root.
 
 ```sh
-scripts/build-app.sh        # builds build/Kept.app
+scripts/build-app.sh
 open build/Kept.app
 ```
 
-With Screen Recording access, Snip opens the macOS region selector directly. Without that access,
-choose a display in the system sharing picker, then drag over the preview to save a region.
+The app bundle includes the Share extension and the `kept-mcp` server.
 
-macOS ties the Screen Recording grant to the app's signature. The build script signs with a
-self-signed identity it creates on first build in `~/Library/Developer/Kept/kept-signing.keychain-db`
-(its own keychain file, not your login keychain), so the grant survives rebuilds. Grant access once
-per Mac; if that keychain file is deleted, a new identity is created and macOS asks once more.
-If System Settings shows Kept enabled but snips are still refused, the grant belongs to an older
-signature: turn Kept off and on there (or remove and re-add it), then reopen Kept.
-To sign with your own identity instead: `KEPT_SIGN_IDENTITY="Apple Development: …" scripts/build-app.sh`.
+### Packaged builds
 
-## Nightly builds and stable releases
+When builds are available, choose the archive for your Mac.
 
-Every branch push runs the macOS service tests and builds Kept for Apple silicon and Intel.
-Download the matching nightly artifact from the **Kept builds** run in the Actions tab.
-Pushing a new tag (for example, `v0.1.0`) publishes both app archives under **Releases**
-after both builds pass. CI uses ad-hoc signing without Apple notarization.
+| Mac | Archive |
+| --- | --- |
+| Apple silicon | `Kept-macOS-arm64.zip` |
+| Intel | `Kept-macOS-x86_64.zip` |
 
-## Share to Kept
+When enabled on GitHub, the `Kept builds` workflow tests and packages both architectures on branch
+pushes. Successful branch builds publish nightly artifacts in
+[Actions](https://github.com/yc-codes/Kept/actions). A new tag, such as `v0.1.0`, publishes both
+archives to [Releases](https://github.com/yc-codes/Kept/releases) after both builds pass. CI
+archives use ad-hoc signatures and are unnotarized.
 
-Open the built app once, then choose **Share → Kept** in a Mac app to save a link, selected text, or an image. Share one item at a time. If Kept is hidden, enable it in the Share menu’s extension settings. Sharing works even when clipboard capture is paused.
+## Use Kept
 
-## Layout
+| To | Do this |
+| --- | --- |
+| Snip part of the screen | Press **⌃⌥S** and drag over the region. Kept saves it and puts the image on your clipboard. |
+| Save your current clipboard | Choose **File › Save Clipboard to Library** or press **⌘⇧V** with Kept active. |
+| Automatically save copied items | Turn on copied images, links, or text in **Settings › Capture**. Each source is off by default. |
+| Import an image or GIF | Drag it into the library, open it with Kept, or choose **File › Import Images…** (**⌘O**). GIFs keep their animation. |
+| Save from another app | Open Kept once, then choose **Share › Kept** in the other app. Share one link, image, or selection of text at a time. If Kept is missing, enable it in the Share menu’s extension settings. |
+| Find something you saved | Search the library or press **⌃⌥K** to open Quick Search from another app. Search matches titles, saved text and URLs, notes, and text recognized in images. |
 
-| Path | What |
-|---|---|
-| `Sources/KeptCore` | Item model, SQLite + FTS5 store, image helpers. Shared by app and MCP server. |
-| `Sources/Kept/Services` | Capture settings, clipboard monitor, snip, global shortcuts, library store. |
-| `Sources/Kept/Connectors` | Connectors: sign in to a service and keep saving what you save there. |
-| `Sources/Kept/Views` | Library window, inspector, welcome flow, quick search panel, settings. |
-| `Sources/KeptMCP` | `kept-mcp`, a stdio MCP server (`search_library`, `get_item`, `list_recent`). |
-| `scripts/` | App bundle and icon build. |
+Select an item and open the inspector to edit its title or add a note. Use the **Favorites** filter
+to find starred items. Change the theme in **Settings › Appearance** and the global shortcuts in
+**Settings › Shortcuts**.
 
-The library lives in `~/Library/Application Support/Kept` (`kept.sqlite`, `assets/`, `thumbs/`).
+### Screen capture permissions
+
+With Screen Recording access, Kept opens the macOS region selector directly. Otherwise, select a
+display in the system sharing picker, then drag over the preview to choose the region. Press **Esc**
+to cancel.
+
+If Kept already appears enabled and capture is refused, open **System Settings › Privacy & Security
+› Screen & System Audio Recording**. Toggle Kept off and back on, or remove and re-add your current
+copy, then quit and reopen the app.
+
+The local build script reuses a signing identity in
+`~/Library/Developer/Kept/kept-signing.keychain-db` so macOS can recognize the app across rebuilds.
+To use your own signing identity, set `KEPT_SIGN_IDENTITY` when running `scripts/build-app.sh`.
+
+## Privacy and storage
+
+Kept stores its SQLite database, saved images, and thumbnails in `~/Library/Application
+Support/Kept`. Open the folder from **Settings › Capture › Show in Finder**. Image text recognition
+runs on your Mac.
+
+Use **Settings › Capture** to exclude apps from automatic clipboard capture. Kept also skips
+supported password managers and clipboard items marked private. Pausing clipboard capture leaves
+snips, manual saves, and sharing available.
 
 ## Connectors
 
-Settings › Connectors pulls in what you save elsewhere. Each connection has its own sign-in, so the same
-service can be added more than once (two GitHub accounts, several feeds). Kept syncs at launch and about
-every half hour, and only ever reads from the service.
+Open **Settings › Connectors › Add Connector** to bring saved links into Kept. You can add several
+accounts or feeds. Enabled connections sync on launch and about every 30 minutes. Use **Sync All
+Now** to refresh them on demand.
 
-| Connector | Sign-in | Saves |
-|---|---|---|
-| GitHub Stars | Personal access token (read-only Starring) | Starred repositories, as links |
-| Raindrop.io | Test token from your Raindrop app settings | Bookmarks, as links |
-| RSS or Atom Feed | None | Feed entries, as links |
+| Connector | What you need | What it saves |
+| --- | --- | --- |
+| GitHub Stars | A personal access token with read-only Starring access | Starred repositories |
+| Raindrop.io | A test token from your Raindrop app settings | Bookmarks |
+| RSS or Atom Feed | A feed URL | Feed entries |
 
-Tokens live in the Keychain, never in the library. A connection remembers what it has delivered, so an
-item you delete does not come back, and a link already in the library is not saved twice.
-
-To add a connector, write one type conforming to `Connector` (`Connectors/Connector.swift`; copy one from
-`Connectors/BuiltIn`) and list it in `ConnectorRegistry.all`. It declares its sign-in fields and implements
-`verify` and `fetch`; the settings row, sign-in sheet, Keychain storage, scheduling and de-duplication come
-from the framework. Sign-in is by token or key for now; there is no browser (OAuth) sign-in yet.
+Connectors read from their sources and store tokens in the macOS Keychain. Kept skips links already
+in the library and remembers delivered entries so the same connection skips them after deletion.
+Removing a connector keeps the items it saved.
 
 ## Connect an agent
 
-Settings › Agents shows these with the right path filled in:
+Open Kept once to create the library, then copy the setup command from **Settings › Agents**. The
+app fills in the path to its bundled server.
 
 ```sh
 claude mcp add --scope user kept -- "/path/to/Kept.app/Contents/MacOS/kept-mcp"
 codex mcp add kept -- "/path/to/Kept.app/Contents/MacOS/kept-mcp"
 ```
 
-Items are cited as `kept://item/<id>`, which opens the exact item in the library.
+Other MCP clients can run the same executable over stdio. The read-only server exposes
+`search_library`, `list_recent`, and `get_item`. Results include a `kept://item/<id>` link that
+opens the saved item in Kept.
 
-## Development notes
+An agent using a cloud model can send the library content it reads to its model provider.
 
-- `@State` is a macro in the current SDK and its compiler plugin ships only with Xcode. Views use
-  `@Local` (`Sources/Kept/Views/Local.swift`) instead so the package builds without Xcode.
-- `KEPT_HOME=<dir>` points the app and `kept-mcp` at a different library, and
-  `KEPT_DEFAULTS_SUITE=<name>` isolates preferences. Use both for test runs.
-- With either of those set, connector sign-ins go to a separate Keychain service. `KEPT_GITHUB_API` and
-  `KEPT_RAINDROP_API` point those connectors at another server, such as a local test double.
-- `KEPT_SNAPSHOT_DIR=<dir>` makes the app render its windows to PNG and quit
-  (see `Services/DebugSnapshot.swift`).
+## Development
 
-## Tests
+| Path | Contents |
+| --- | --- |
+| [Sources/Kept](Sources/Kept) | SwiftUI app, capture services, and connectors |
+| [Sources/KeptCore](Sources/KeptCore) | Item model, SQLite and full-text search, and image helpers |
+| [Sources/KeptMCP](Sources/KeptMCP) | Read-only MCP server |
+| [ShareExtension](ShareExtension) | macOS Share extension |
+| [Tests](Tests) | Service, browser, and snapshot fixtures and checks |
+| [scripts](scripts) | Build, packaging, and test commands |
 
-Run the macOS tests from a logged-in desktop session. They use temporary libraries and named
-pasteboards. Connector tests use a local HTTP fixture and synthetic Keychain entries that they remove.
+Set `KEPT_HOME` to point the app and MCP server at a test library. Use `KEPT_DEFAULTS_SUITE` to
+isolate app preferences. Either setting also selects a separate Keychain service for connector
+sign-ins. `KEPT_GITHUB_API` and `KEPT_RAINDROP_API` can point the connectors at local test servers.
+`KEPT_SNAPSHOT_DIR` makes the app render its windows to PNG and exit.
+
+SwiftUI views use the [`@Local` wrapper](Sources/Kept/Views/Local.swift) to support Command Line
+Tools builds. The in-app illustrations follow light and dark mode and respect Reduce Motion.
+
+To add a source, implement `verify` and `fetch` on a type that conforms to
+[`Connector`](Sources/Kept/Connectors/Connector.swift), then register it in `ConnectorRegistry.all`.
+
+### Tests
+
+Run the macOS suites from a logged-in desktop session with Python 3 and the Command Line Tools
+installed.
 
 ```sh
-scripts/test.sh                         # service, storage, OCR, connector, and MCP tests
+scripts/test.sh
 scripts/build-app.sh
-scripts/test-native-ui.py               # render and check the bundled app's windows
-npx playwright install chromium
-scripts/test-website.sh                 # browser interaction and randomized demo tests
+scripts/test-native-ui.py
 ```
 
-Set `KEPT_TEST_CHROME` to an installed Chrome executable to run the website suite without
-installing Playwright's Chromium. Use `KEPT_TEST_SEED=42` to replay one storage or website sequence.
-The service runner prints confirmed defects as `KNOWN ISSUE`. Set `KEPT_TEST_STRICT=1` to make those
-reproductions fail the run.
+`test.sh` covers capture settings, clipboard handling, storage, OCR, connectors, MCP, and seeded
+random sequences. It uses temporary libraries, named pasteboards, a local HTTP fixture, and
+synthetic Keychain entries that it removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence,
+or `KEPT_TEST_STRICT=1` to fail the run on reproduced known issues.
 
-Native window checks cover all five Settings tabs, connector sheets, onboarding, library views,
-the inspector, and Quick Search. Interactive macOS checks such as global shortcut delivery, the
-screen picker, and sharing from a host app require a separate desktop pass.
+`test-native-ui.py` checks rendered windows for all five Settings tabs, connector sheets,
+onboarding, the library, the inspector, and Quick Search. Global shortcut delivery, live screen
+selection, and sharing from another app require interactive testing.
 
-## Not built yet
+### Website
 
-Generated descriptions (local model / own API key), readable-page capture for links, multi-select,
-export, launch at login.
-
-## Adding things
-
-Snip (`⌃⌥S`), copy with a clipboard source switched on, drop images, GIFs, links or text onto the
-library window, File › Import Images… (`⌘O`), or open an image with Kept. GIFs are stored unchanged
-and animate in the inspector.
-
-The in-app illustrations (`Views/Illustrations.swift`) are drawn in SwiftUI rather than shipped as
-image files, so they follow light and dark mode and stop when Reduce Motion is on.
-
-## Website
-
-The product website lives in `website/`. To preview it locally with Python 3:
+The static site in [website](website) uses sample data for its interactive demo. To preview it
+locally, run the following command and open [localhost:4173](http://localhost:4173).
 
 ```sh
-python3 -m http.server 4173 --directory website
+python3 -m http.server 4173 --bind 127.0.0.1 --directory website
 ```
 
-Open http://localhost:4173. The site is static and can be served directly from
-`website/`. The interactive demo uses sample data, and the library previews
-are screenshots from the native app with a separate sample library.
+Run the browser tests with Node.js and npm installed.
+
+```sh
+npm exec --yes --package=playwright -- playwright install chromium
+scripts/test-website.sh
+```
+
+Set `KEPT_TEST_CHROME` to an installed Chrome executable to use it in place of Playwright’s
+Chromium. Set `KEPT_TEST_SEED=42` to replay one browser sequence.
