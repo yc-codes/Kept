@@ -120,6 +120,7 @@ struct LibraryView: View {
 
             if library.items.isEmpty {
                 emptyState
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if viewMode == "list" {
                 ItemTable(onPreview: preview, onDelete: { pendingDelete = $0 })
             } else {
@@ -227,29 +228,34 @@ struct SidebarView: View {
     @EnvironmentObject private var settings: CaptureSettings
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Image(nsImage: NSApp.applicationIconImage)
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                        .accessibilityHidden(true)
-                    Text("Kept")
-                        .font(LibraryPalette.heading(22))
-                }
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
-                    .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 32, height: 32)
+                    .accessibilityHidden(true)
+                Text("Kept")
+                    .font(LibraryPalette.heading(22))
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .accessibilityAddTraits(.isHeader)
 
-                filterRow(.all)
-                filterRow(.favorites)
-                Divider().padding(.vertical, 10)
-                ForEach([ItemFilter.snips, .images, .links, .text]) { filter in
-                    filterRow(filter)
+            List(selection: $library.filter) {
+                Section {
+                    filterRow(.all)
+                    filterRow(.favorites)
+                }
+                Section {
+                    ForEach([ItemFilter.snips, .images, .links, .text]) { filter in
+                        filterRow(filter)
+                    }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 20)
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .accessibilityLabel("Library filters")
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(spacing: 8) {
@@ -282,29 +288,14 @@ struct SidebarView: View {
     }
 
     private func filterRow(_ filter: ItemFilter) -> some View {
-        let selected = library.filter == filter
-        return Button {
-            library.filter = filter
-        } label: {
-            HStack(spacing: 9) {
-                Image(systemName: filter.symbol)
-                    .frame(width: 17)
-                    .foregroundStyle(selected ? LibraryPalette.accent : Color.secondary)
-                    .accessibilityHidden(true)
-                Text(filter.title)
-                    .font(.callout.weight(selected ? .semibold : .regular))
-                Spacer(minLength: 4)
-                Text((library.counts[filter] ?? 0).formatted())
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .frame(minHeight: 34)
-            .background(selected ? LibraryPalette.selection : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        let count = library.counts[filter] ?? 0
+        return Label(filter.title, systemImage: filter.symbol)
+            .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
             .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+            .badge(count.formatted())
+            .tag(filter)
+            .accessibilityLabel(filter.title)
+            .accessibilityValue("\(count) \(count == 1 ? "item" : "items")")
     }
 }
 

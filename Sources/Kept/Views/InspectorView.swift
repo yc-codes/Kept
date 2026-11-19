@@ -28,43 +28,18 @@ struct InspectorView: View {
 
                 preview
 
-                HStack(spacing: 8) {
-                    Button {
-                        guard library.copy(item) else { return }
-                        copied = true
-                        Task {
-                            try? await Task.sleep(for: .seconds(1.2))
-                            copied = false
-                        }
-                    } label: {
-                        Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        primaryActions
+                        Spacer(minLength: 0)
+                        itemActions
                     }
-                    .buttonStyle(.borderedProminent)
-                    if item.kind != .text {
-                        Button {
-                            library.open(item)
-                        } label: {
-                            Label(item.kind == .link ? "Open Link" : "Open", systemImage: "arrow.up.forward.square")
-                        }
+                    VStack(alignment: .leading, spacing: 8) {
+                        primaryActions
+                        itemActions
                     }
-                    Spacer(minLength: 0)
-                    Button {
-                        library.toggleFavorite(item)
-                    } label: {
-                        Image(systemName: item.favorite ? "star.fill" : "star")
-                            .foregroundStyle(item.favorite ? LibraryPalette.accent : Color.secondary)
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(item.favorite ? "Remove from Favorites" : "Add to Favorites")
-                    .help(item.favorite ? "Remove from Favorites" : "Add to Favorites")
-                    Button(role: .destructive, action: onDelete) {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel("Delete")
-                    .help("Delete")
                 }
-                .controlSize(.regular)
+                .controlSize(.large)
 
                 section("Your Note") {
                     ZStack(alignment: .topLeading) {
@@ -147,6 +122,51 @@ struct InspectorView: View {
         }
         .background(LibraryPalette.sidebar)
         .tint(LibraryPalette.accent)
+    }
+
+    private var primaryActions: some View {
+        HStack(spacing: 8) {
+            Button {
+                guard library.copy(item) else { return }
+                copied = true
+                Task {
+                    try? await Task.sleep(for: .seconds(1.2))
+                    copied = false
+                }
+            } label: {
+                Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+            }
+            .buttonStyle(.borderedProminent)
+            if item.kind != .text {
+                Button {
+                    library.open(item)
+                } label: {
+                    Label(item.kind == .link ? "Open Link" : "Open", systemImage: "arrow.up.forward.square")
+                }
+            }
+        }
+        .fixedSize()
+    }
+
+    private var itemActions: some View {
+        HStack(spacing: 8) {
+            Button {
+                library.toggleFavorite(item)
+            } label: {
+                Image(systemName: item.favorite ? "star.fill" : "star")
+                    .foregroundStyle(item.favorite ? LibraryPalette.accent : Color.secondary)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel(item.favorite ? "Remove from Favorites" : "Add to Favorites")
+            .help(item.favorite ? "Remove from Favorites" : "Add to Favorites")
+            Button(role: .destructive, action: onDelete) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Delete item")
+            .help("Delete item")
+        }
+        .fixedSize()
     }
 
     @ViewBuilder
