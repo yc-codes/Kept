@@ -50,12 +50,17 @@ func testFeedParsing() throws {
     try check(ConnectorDates.parse("nonsense") == nil && ConnectorDates.parse(" ") == nil, "unparseable dates")
 }
 
-func rssImportsOpaqueGUIDAsLink() -> Bool {
+func testOpaqueGUID() throws {
     let rss = FeedParser(base: base)
-    let valid = rss.parse(Data("""
-        <rss><channel><item><guid isPermaLink="false">opaque-id</guid></item></channel></rss>
-        """.utf8))
-    return valid && rss.entries.first.flatMap(address) == "https://example.test/news/opaque-id"
+    try check(rss.parse(Data("""
+        <rss><channel><item><guid isPermaLink="false">opaque-id</guid></item>
+        <item><guid isPermaLink="false">opaque-with-link</guid><link>/linked</link></item>
+        <item><guid isPermaLink="true">https://example.test/explicit</guid></item></channel></rss>
+        """.utf8)), "RSS feed parsed")
+    try check(rss.entries.map(\.key) == ["opaque-with-link", "https://example.test/explicit"],
+              "an entry with only a non-permalink GUID is skipped; the GUID still identifies a linked entry")
+    try check(rss.entries.map(address) == ["https://example.test/linked", "https://example.test/explicit"],
+              "non-permalink GUID is never used as the address")
 }
 
 private final class ConnectorServer {
@@ -181,7 +186,7 @@ func testConnectors() async throws {
 }
 
 @MainActor
-func pausedConnectorResumesOnEdit() async throws -> Bool {
+func testPausedConnectorEdit() async throws {
     let server = try ConnectorServer()
     let db = try Database(url: scratch("paused-connector").appendingPathComponent("test.sqlite"))
     let center = ConnectorCenter(db: db, library: LibraryStore(db: db))
@@ -192,6 +197,10 @@ func pausedConnectorResumesOnEdit() async throws -> Bool {
     let paused = try center.connections.first.unwrap("paused connection")
     try check(!paused.enabled, "precondition: connector is paused")
     try await center.connect(feed, name: "Renamed", values: server.feedValues, existing: paused)
-    try await eventually("post-edit sync completes") { center.syncing.isEmpty }
-    return center.connections.first?.enabled == true
+    try check(center.syncing.isEmpty, "editing a paused connection does not start a sync")
+    let edited = try center.connections.first.unwrap("edited connection")
+    try check(!edited.enabled && edited.name == "Renamed", "edit is saved and the connection stays paused")
+    center.setEnabled(edited, true)
+    try await eventually("resumed sync completes") { center.syncing.isEmpty }
+    try check(center.connections.first?.enabled == true, "explicit resume still works")
 }

@@ -49,6 +49,8 @@ final class FeedParser: NSObject, XMLParserDelegate {
     private var entryDepth: Int?
     private var text = ""
     private var fields: [String: String] = [:]
+    /// RSS: false when the entry's `<guid>` says `isPermaLink="false"`, making it an identifier only.
+    private var guidIsPermalink = true
 
     init(base: URL) { self.base = base }
 
@@ -72,10 +74,14 @@ final class FeedParser: NSObject, XMLParserDelegate {
         if entryDepth == nil, name == "item" || name == "entry" {
             entryDepth = depth
             fields = [:]
+            guidIsPermalink = true
         } else if name == "link", let entryDepth, depth == entryDepth + 1, let href = attributes["href"] {
             // Atom: prefer the page itself over feeds, comments and enclosures.
             let relation = attributes["rel"] ?? "alternate"
             if relation == "alternate" || fields["link"] == nil { fields["link"] = href }
+        } else if name == "guid", let entryDepth, depth == entryDepth + 1 {
+            let flag = attributes.first { $0.key.lowercased() == "ispermalink" }?.value
+            guidIsPermalink = flag?.trimmingCharacters(in: .whitespaces).lowercased() != "false"
         }
     }
 
@@ -112,8 +118,9 @@ final class FeedParser: NSObject, XMLParserDelegate {
     }
 
     private func finishEntry() {
-        // Some feeds carry the address only in a permalink <guid>.
-        let address = fields["link"] ?? fields["guid"] ?? ""
+        // Some feeds carry the address only in a permalink <guid>. One marked as not a permalink is an
+        // opaque identifier, never an address.
+        let address = fields["link"] ?? (guidIsPermalink ? fields["guid"] : nil) ?? ""
         guard let url = URL(string: address, relativeTo: base)?.absoluteURL,
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https"
         else { return }

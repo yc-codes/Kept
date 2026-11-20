@@ -141,8 +141,7 @@ scripts/test-native-ui.py
 
 `test.sh` covers capture settings, clipboard handling, storage, OCR, connectors, MCP, and seeded
 random sequences. It uses temporary libraries, named pasteboards, a local HTTP fixture, and
-synthetic Keychain entries that it removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence,
-or `KEPT_TEST_STRICT=1` to fail the run on reproduced known issues.
+synthetic Keychain entries that it removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence.
 
 `test-native-ui.py` checks rendered windows for all five Settings tabs, connector sheets,
 onboarding, the library, the inspector, and Quick Search. Global shortcut delivery, live screen

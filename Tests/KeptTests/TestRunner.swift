@@ -79,6 +79,11 @@ enum TestRunner {
             ("MCP stdio tools, read-only behavior and malformed messages", { try testMCP() }),
             ("seeded monkey testing of storage and search", testMonkey),
             ("seeded monkey testing of app-level library actions", testStoreMonkey),
+            ("RSS GUID marked as a non-permalink is never used as a URL", { try testOpaqueGUID() }),
+            ("search containing an embedded NUL", { try testNULSearch() }),
+            ("editing a title or note refreshes the active search", testSearchAfterEdit),
+            ("editing a paused feed connection keeps it paused", testPausedConnectorEdit),
+            ("signature-only image payloads are rejected", testTruncatedImages),
         ]
 
         var failures = 0
@@ -92,30 +97,7 @@ enum TestRunner {
             }
         }
 
-        let issues: [(String, @MainActor () async throws -> Bool)] = [
-            ("RSS treats a GUID marked as a non-permalink as a relative URL", { rssImportsOpaqueGUIDAsLink() }),
-            ("search containing an embedded NUL fails in SQLite FTS", { try nulSearchFails() }),
-            ("editing a title can leave the item visible under a search for the old title", staleSearchAfterEdit),
-            ("editing a paused feed connection silently re-enables it", pausedConnectorResumesOnEdit),
-            ("a file containing only a PNG signature is saved as an image", acceptsTruncatedPNG),
-        ]
-        var reproduced = 0
-        for (name, reproduce) in issues {
-            do {
-                if try await reproduce() {
-                    reproduced += 1
-                    print("KNOWN ISSUE \(name)")
-                } else {
-                    failures += 1
-                    print("CHANGED \(name) — update the regression check for the new behavior")
-                }
-            } catch {
-                failures += 1
-                print("FAIL reproducing \(name) — \(error)")
-            }
-        }
-        print("\(tests.count + issues.count) suites, \(failures) unexpected failures, \(reproduced) known issues")
-        let strict = ProcessInfo.processInfo.environment["KEPT_TEST_STRICT"] == "1"
-        return failures + (strict ? reproduced : 0)
+        print("\(tests.count) suites, \(failures) failures")
+        return failures
     }
 }

@@ -34,7 +34,7 @@ final class ConnectorCenter: ObservableObject {
 
     // MARK: Adding, editing, removing
 
-    /// Checks the settings against the service, then saves the connection and starts its first sync.
+    /// Checks the settings against the service, then saves the connection and, unless it is paused, syncs it.
     /// Pass `existing` to change a connection; secret fields left empty keep their stored value.
     func connect(
         _ connector: any Connector, name: String, values: [String: String], existing: Connection? = nil
@@ -65,7 +65,8 @@ final class ConnectorCenter: ObservableObject {
         connection.name = chosen
         connection.config = config
         connection.account = account
-        connection.enabled = true
+        // Editing keeps a paused connection paused; only a new one starts out enabled.
+        connection.enabled = existing?.enabled ?? true
 
         try ConnectorSecrets.save(secrets, for: connection.id)
         do {
@@ -75,7 +76,7 @@ final class ConnectorCenter: ObservableObject {
             throw error
         }
         reload()
-        sync(connection.id)
+        if connection.enabled { sync(connection.id) }
     }
 
     func setEnabled(_ connection: Connection, _ enabled: Bool) {

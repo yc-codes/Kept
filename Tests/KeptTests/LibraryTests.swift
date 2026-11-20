@@ -82,7 +82,7 @@ func testLibrary() async throws {
 }
 
 @MainActor
-func staleSearchAfterEdit() async throws -> Bool {
+func testSearchAfterEdit() async throws {
     let db = try Database(url: scratch("edit").appendingPathComponent("test.sqlite"))
     let item = Item(kind: .text, method: .manual, title: "Bluebird", hash: "bluebird")
     try db.insert(item)
@@ -91,22 +91,31 @@ func staleSearchAfterEdit() async throws -> Bool {
     let library = LibraryStore(db: db, pasteboard: board)
     library.searchText = "bluebird"
     try check(library.items.map(\.id) == [item.id], "precondition: old title matched")
+    library.selectedID = item.id
     library.setTitle(item.id, "Goldfinch")
-    try check(try db.items(search: "bluebird").isEmpty, "database already refreshed the search index")
-    return library.items.map(\.id) == [item.id]
+    try check(try db.items(search: "bluebird").isEmpty, "database refreshed the search index")
+    try check(library.items.isEmpty, "renamed item leaves the results for its old title")
+    try check(library.selectedItem?.title == "Goldfinch", "item being edited stays open in the inspector")
+    library.setNote(item.id, "A bluebird sighting")
+    try check(library.items.map(\.id) == [item.id], "item returns once its note matches")
+    library.setNote(item.id, "")
+    try check(library.items.isEmpty && library.selectedItem?.id == item.id, "and leaves again, still selected")
+    library.searchText = ""
+    try check(library.items.map(\.id) == [item.id] && library.selectedID == item.id, "clearing the search lists it")
 }
 
 @MainActor
-func acceptsTruncatedPNG() async throws -> Bool {
+func testTruncatedImages() async throws {
     let db = try Database(url: scratch("truncated").appendingPathComponent("test.sqlite"))
     let board = NSPasteboard.withUniqueName()
     defer { board.releaseGlobally() }
     let library = LibraryStore(db: db, pasteboard: board)
-    let truncated = Data([0x89, 0x50, 0x4E, 0x47])
-    library.ingest(.image(truncated), method: .manual, source: nil)
+    library.ingest(.image(Data([0x89, 0x50, 0x4E, 0x47])), method: .manual, source: nil)
+    library.ingest(.image(Data([0x47, 0x49, 0x46, 0x38])), method: .manual, source: nil)
     library.ingest(.text("Queue barrier"), method: .manual, source: nil, select: true)
     try await eventually("ingest queue drained") { library.selectedItem?.text == "Queue barrier" }
-    return try db.items(filter: .images).contains { $0.width == 0 && $0.height == 0 }
+    try check(try db.items(filter: .images).isEmpty, "signature-only PNG and GIF payloads are rejected")
+    try check(library.errorMessage == nil, "rejection does not raise an error alert")
 }
 
 @MainActor

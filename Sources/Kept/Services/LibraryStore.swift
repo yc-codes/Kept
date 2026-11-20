@@ -90,12 +90,14 @@ final class LibraryStore: ObservableObject {
                 // Animated GIFs are kept as they are; everything else is normalised to PNG.
                 let isGIF = ImageTools.isGIF(raw)
                 guard let data = isGIF ? raw : ImageTools.png(from: raw) else { break }
+                // A matching signature is not enough: truncated or corrupt data must not become an item.
+                let size = ImageTools.pixelSize(data)
+                guard size.width > 0, size.height > 0 else { break }
                 let hash = Hashing.sha256(data)
                 if let existing = try? db.item(hash: hash) {
                     item = existing
                     break
                 }
-                let size = ImageTools.pixelSize(data)
                 let noun = method == .snip ? "Snip" : (isGIF ? "GIF" : "Image")
                 var new = Item(
                     kind: .image, method: method, title: title ?? appName.map { "\(noun) from \($0)" } ?? noun,
@@ -316,10 +318,21 @@ final class LibraryStore: ObservableObject {
         }
     }
 
+    /// Re-runs an active search after an edit to an indexed field, so an item that no longer matches
+    /// leaves the results. If it is the selected item it stays open in the inspector, since these edits
+    /// arrive on every keystroke.
+    private func refreshSearch(after id: String) {
+        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        if selectedID == id, let item = selectedItem { revealed = item }
+        reload()
+        if revealed?.id == id, items.contains(where: { $0.id == id }) { revealed = nil }
+    }
+
     func setNote(_ id: String, _ note: String) {
         do {
             try db.setNote(id: id, note: note)
             patch(id) { $0.note = note }
+            refreshSearch(after: id)
         } catch {
             report("save your note", error)
         }
@@ -329,6 +342,7 @@ final class LibraryStore: ObservableObject {
         do {
             try db.setTitle(id: id, title: title)
             patch(id) { $0.title = title }
+            refreshSearch(after: id)
         } catch {
             report("save the title", error)
         }

@@ -303,7 +303,8 @@ public final class Database: @unchecked Sendable {
 public enum FTSQuery {
     /// Turns free text into a prefix-matching FTS5 query: `onboard lay` → `"onboard"* "lay"*`.
     public static func make(_ input: String) -> String? {
-        let terms = input.split(whereSeparator: { $0.isWhitespace })
+        // SQLite reads the query as a C string, so an embedded NUL would cut it off mid-phrase.
+        let terms = input.split(whereSeparator: { $0.isWhitespace || $0 == "\0" })
             .map { $0.replacingOccurrences(of: "\"", with: "") }
             .filter { $0.contains(where: { $0.isLetter || $0.isNumber }) }
             .map { "\"\($0)\"*" }

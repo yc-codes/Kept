@@ -193,14 +193,13 @@ func testMonkey() async throws {
     print("  \(seeds.count * steps) operations across seeds \(seeds)")
 }
 
-func nulSearchFails() throws -> Bool {
+func testNULSearch() throws {
     let db = try Database(url: scratch("nul-search").appendingPathComponent("test.sqlite"))
-    do {
-        _ = try db.items(search: "nul\0byte")
-        return false
-    } catch let error as DBError {
-        return error.description.contains("unterminated string")
-    }
+    let item = Item(kind: .text, method: .manual, title: "nul byte", hash: "nul-byte")
+    try db.insert(item)
+    try check(try db.items(search: "nul\0byte").map(\.id) == [item.id], "NUL separates search terms")
+    try check(try db.items(search: "nul\0").map(\.id) == [item.id], "trailing NUL is ignored")
+    try check(try db.items(search: "\0").isEmpty, "a query of only NUL matches nothing")
 }
 
 func testMigration() throws {
