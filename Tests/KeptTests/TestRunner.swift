@@ -77,6 +77,7 @@ enum TestRunner {
             ("RSS, RDF, Atom and connector date parsing", { try testFeedParsing() }),
             ("HTTP connectors and settings lifecycle against a local server", testConnectors),
             ("MCP stdio tools, read-only behavior and malformed messages", { try testMCP() }),
+            ("agent connections through command-line tools and settings files", testAgentConnections),
             ("seeded monkey testing of storage and search", testMonkey),
             ("seeded monkey testing of app-level library actions", testStoreMonkey),
             ("RSS GUID marked as a non-permalink is never used as a URL", { try testOpaqueGUID() }),

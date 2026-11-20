@@ -13,6 +13,7 @@ final class AppServices {
     let clipboard: ClipboardMonitor
     let snipper: SnipService
     let quickPanel: QuickPanelController
+    let agents = AgentCenter()
 
     /// Captured from SwiftUI so non-SwiftUI code can reopen the library window.
     var openLibraryWindow: (() -> Void)?
@@ -54,6 +55,8 @@ final class AppServices {
 
     func start() {
         NSApp.appearance = settings.theme.appearance
+        // Agents run Kept's server through this link, so it has to follow the app when the app moves.
+        AgentLauncher.refresh()
         clipboard.start()
         library.resumePendingOCR()
         connectors.start()
@@ -136,6 +139,7 @@ struct KeptApp: App {
                 .environmentObject(services.library)
                 .environmentObject(services.connectors)
                 .environmentObject(services.settings)
+                .environmentObject(services.agents)
         }
 
         MenuBarExtra {

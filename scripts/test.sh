@@ -13,7 +13,7 @@ link=(-I "$test_build" -L "$test_build" -lKeptCore -lsqlite3)
 xcrun swiftc -swift-version 5 "${link[@]}" Sources/KeptMCP/main.swift -o "$test_build/kept-mcp"
 xcrun swiftc -swift-version 5 -parse-as-library "${link[@]}" \
     Sources/Kept/KeptIcon.swift \
-    Sources/Kept/Services/{CaptureSettings,Clipboard,HotKeys,LibraryStore}.swift \
+    Sources/Kept/Services/{AgentConnections,CaptureSettings,Clipboard,HotKeys,LibraryStore}.swift \
     Sources/Kept/Connectors/*.swift Sources/Kept/Connectors/BuiltIn/*.swift \
     Tests/KeptTests/*.swift -o "$test_build/KeptTests"
 

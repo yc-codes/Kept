@@ -244,66 +244,62 @@ struct CaptureStack: View {
 
 // MARK: Agent
 
-/// A question asked in an agent, answered with a saved item.
+/// "Kept fix last 4": an agent picks up the latest snips and fixes what each one shows.
 struct AgentDemo: View {
     @Environment(\.keptAccent) private var accentChoice
     private var accent: Color { accentChoice.color }
 
-    private let question = "Which screenshot did I save for onboarding?"
+    private let request = "Kept fix last 4"
+    private let snips: [(title: String, colors: [Color])] = [
+        ("Clipped title", [.orange.opacity(0.85), .pink.opacity(0.8)]),
+        ("Button overlap", [.blue.opacity(0.75), .purple.opacity(0.75)]),
+        ("Wrong total", [.teal.opacity(0.8), .green.opacity(0.7)]),
+        ("Dead link", [.indigo.opacity(0.75), .pink.opacity(0.7)]),
+    ]
+
+    // The story, as fractions of one loop: type the request, the snips arrive, each gets fixed, hold, fade.
+    private func arrived(_ index: Int, _ p: Double) -> Double {
+        ramp(p, 0.22 + 0.03 * Double(index), 0.27 + 0.03 * Double(index))
+    }
+
+    private func fixed(_ index: Int, _ p: Double) -> Double {
+        ramp(p, 0.42 + 0.11 * Double(index), 0.46 + 0.11 * Double(index))
+    }
 
     var body: some View {
-        Loop(period: 8, resting: 0.8) { p in
-            let typed = Int(Double(question.count) * ramp(p, 0.04, 0.34))
-            let thinking = ramp(p, 0.36, 0.40) * (1 - ramp(p, 0.52, 0.56))
-            let answer = ramp(p, 0.54, 0.62) * (1 - ramp(p, 0.95, 1.0))
+        Loop(period: 9, resting: 0.9) { p in
+            let typed = Int((Double(request.count) * ramp(p, 0.03, 0.16)).rounded())
+            let fixedCount = snips.indices.filter { fixed($0, p) > 0.5 }.count
+            let fade = 1 - ramp(p, 0.96, 1.0)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Spacer(minLength: 40)
-                    Text(String(question.prefix(max(typed, 1))))
+                    Text(String(request.prefix(max(typed, 1))))
                         .font(.callout)
                         .foregroundStyle(LibraryPalette.surface)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                ZStack(alignment: .topLeading) {
-                    HStack(spacing: 5) {
-                        KeptIcon.sparkle.image(size: 13)
-                        Text("Searching Kept…")
+                HStack(alignment: .top, spacing: 8) {
+                    ForEach(snips.indices, id: \.self) { index in
+                        snip(index, arrived: arrived(index, p) * fade, fixed: fixed(index, p))
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .opacity(thinking)
-
-                    HStack(spacing: 10) {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(LinearGradient(colors: [.orange.opacity(0.85), .pink.opacity(0.8)], startPoint: .top, endPoint: .bottom))
-                            .frame(width: 48, height: 36)
-                            .overlay {
-                                KeptIcon.window.image()
-                                    .foregroundStyle(.white.opacity(0.9))
-                            }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Snip from Safari")
-                                .font(.callout.weight(.medium))
-                            Text("“Try this layout for the onboarding screen”")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text("kept://item/k7vdrd9be")
-                                .font(.system(.caption2, design: .monospaced))
-                                .foregroundStyle(accent)
-                        }
-                    }
-                    .padding(8)
-                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(Color(nsColor: .separatorColor))
-                    }
-                    .opacity(answer)
-                    .offset(y: 6 * (1 - answer))
                 }
-                .frame(height: 56, alignment: .topLeading)
+                HStack(spacing: 5) {
+                    if fixedCount == snips.count {
+                        KeptIcon.checkCircle.image(size: 13)
+                            .foregroundStyle(.green)
+                        Text("Fixed \(snips.count) of \(snips.count)")
+                    } else {
+                        KeptIcon.sparkle.image(size: 13)
+                        Text(p < 0.40 ? "Reading your last \(snips.count) captures from Kept…"
+                             : "Fixing \(fixedCount + 1) of \(snips.count)…")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .opacity(ramp(p, 0.18, 0.22) * fade)
             }
             .padding(12)
             .frame(maxWidth: .infinity)
@@ -314,7 +310,40 @@ struct AgentDemo: View {
             }
         }
         .accessibilityElement()
-        .accessibilityLabel("Animation: asking an agent a question returns the matching saved item with a link")
+        .accessibilityLabel("Animation: telling an agent “Kept fix last 4” brings in the four latest snips, and it fixes what each one shows")
+    }
+
+    /// One snip: a problem badge until the agent has dealt with it, a check mark after.
+    private func snip(_ index: Int, arrived: Double, fixed: Double) -> some View {
+        VStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(LinearGradient(colors: snips[index].colors, startPoint: .top, endPoint: .bottom))
+                .frame(height: 40)
+                .overlay {
+                    KeptIcon.window.image()
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .overlay(alignment: .topTrailing) {
+                    ZStack {
+                        Circle().fill(Color(nsColor: .textBackgroundColor))
+                        KeptIcon.warning.image(size: 11)
+                            .foregroundStyle(.orange)
+                            .opacity(1 - fixed)
+                        KeptIcon.checkCircle.image(size: 13)
+                            .foregroundStyle(.green)
+                            .scaleEffect(fixed)
+                    }
+                    .frame(width: 17, height: 17)
+                    .offset(x: 5, y: -5)
+                }
+            Text(snips[index].title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .opacity(arrived)
+        .offset(y: 6 * (1 - arrived))
     }
 }
 
