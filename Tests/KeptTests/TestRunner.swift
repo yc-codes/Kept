@@ -30,9 +30,12 @@ func eventually(_ message: String, timeout: Duration = .seconds(8),
                 _ condition: () throws -> Bool) async throws {
     let clock = ContinuousClock()
     let deadline = clock.now + timeout
+    // Most conditions hold within a few milliseconds, so the first looks come quickly.
+    var pause = Duration.milliseconds(1)
     repeat {
         if try condition() { return }
-        try await Task.sleep(for: .milliseconds(25))
+        try await Task.sleep(for: pause)
+        pause = min(pause * 2, .milliseconds(25))
     } while clock.now < deadline
     throw CheckFailure(description: message)
 }

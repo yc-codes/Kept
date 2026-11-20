@@ -19,6 +19,8 @@ async function withBrowser(run) {
 test('website demo, all filters, keyboard detail, theme persistence and responsive layout', async () => {
   await withBrowser(async browser => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    // The agent demo runs on timers, so a controllable clock can play it through without the wait.
+    await page.clock.install();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(url);
@@ -60,7 +62,8 @@ test('website demo, all filters, keyboard detail, theme persistence and responsi
     await demo.scrollIntoViewIfNeeded();
     await page.locator('.agent-demo.playing').waitFor();
     assert.equal(await demo.locator('.demo-shots li.fixed').count(), 0, 'the demo starts over when it plays');
-    await page.locator('.agent-demo:not(.playing)').waitFor({ timeout: 15000 });
+    await page.clock.runFor(15000);
+    await page.locator('.agent-demo:not(.playing)').waitFor();
     assert.equal(await demo.locator('.demo-typed').textContent(), 'Kept fix last 4');
     assert.equal(await demo.locator('.demo-shots li.fixed').count(), 4);
     assert.equal(await demo.locator('.waiting').count(), 0);

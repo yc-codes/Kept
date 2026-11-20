@@ -162,10 +162,12 @@ scripts/test-native-ui.py
 `test.sh` covers capture settings, clipboard handling, storage, OCR, connectors, MCP, agent
 connections, and seeded random sequences. It uses temporary libraries, named pasteboards, a local
 HTTP fixture, stand-ins for the agents’ command-line tools, and synthetic Keychain entries that it
-removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence.
+removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence. Compiled test products are kept in
+`.build/kept-tests`, and only the ones whose sources changed are built again.
 
 `test-native-ui.py` checks rendered windows for all five Settings tabs, connector sheets,
-onboarding, the library, the inspector, and Quick Search. Global shortcut delivery, live screen
+onboarding, the library, the inspector, and Quick Search. The windows render side by side; pass
+`--jobs 1` to bring them up one at a time. Global shortcut delivery, live screen
 selection, and sharing from another app require interactive testing.
 
 ### Website

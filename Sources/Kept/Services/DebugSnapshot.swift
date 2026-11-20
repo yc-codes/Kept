@@ -68,7 +68,7 @@ enum DebugSnapshot {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             switch show {
             case "welcome": services.library.showWelcome = true
-            case "quick": services.quickPanel.show()
+            case "quick": services.quickPanel.show(pinned: true)
             case "settings": services.openSettingsWindow?()
             case "select": services.library.selectedID = services.library.items.first { $0.kind == .image }?.id
             default: break

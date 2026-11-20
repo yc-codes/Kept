@@ -37,6 +37,8 @@ final class QuickSearchModel: ObservableObject {
 
 private final class QuickPanel: NSPanel {
     var keyHandler: ((NSEvent) -> Bool)?
+    /// Off while a snapshot is being rendered, when another app may take focus at any moment.
+    var closesOnResignKey = true
 
     override var canBecomeKey: Bool { true }
 
@@ -47,7 +49,7 @@ private final class QuickPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        orderOut(nil)
+        if closesOnResignKey { orderOut(nil) }
     }
 }
 
@@ -71,9 +73,10 @@ final class QuickPanelController {
         panel?.orderOut(nil)
     }
 
-    func show() {
+    func show(pinned: Bool = false) {
         let panel = self.panel ?? makePanel()
         self.panel = panel
+        panel.closesOnResignKey = !pinned
         model.reset()
         // A fresh hosting view each time puts the cursor back in the search field.
         panel.contentView = NSHostingView(rootView: QuickSearchView(

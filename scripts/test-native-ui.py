@@ -6,17 +6,17 @@ import os
 import subprocess
 import tempfile
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run_matrix(app, work):
+def run_matrix(app, work, jobs):
+    # The text recognizer compiles while the first windows are coming up.
     recognizer = work / "snapshot-text"
-    subprocess.run(
-        ["xcrun", "swiftc", str(ROOT / "Tests/Fixtures/snapshot_text.swift"), "-o", str(recognizer)],
-        check=True,
-    )
+    compiler = subprocess.Popen(
+        ["xcrun", "swiftc", str(ROOT / "Tests/Fixtures/snapshot_text.swift"), "-o", str(recognizer)])
     sample = str(ROOT / "website/assets/kept-icon.png")
     settings = {"KEPT_SNAPSHOT_SHOW": "settings"}
     cases = [
@@ -41,20 +41,24 @@ def run_matrix(app, work):
         ("library-empty", {}, ["Keep your first capture", "All Items"]),
         ("library-grid", {"KEPT_SNAPSHOT_IMPORT": sample}, ["All Items", "kept-icon"]),
         ("library-list", {"KEPT_SNAPSHOT_IMPORT": sample}, ["All Items", "Name", "Source", "Captured", "kept-icon"]),
+        # The window is rarely the active one, and an inactive window dims its Copy button past reading.
         ("inspector", {"KEPT_SNAPSHOT_SHOW": "select", "KEPT_SNAPSHOT_IMPORT": sample},
-         ["kept-icon", "Why did you save this", "Copy"]),
+         ["kept-icon", "Why did you save this", "Open", "Details"]),
         ("quick-search", {"KEPT_SNAPSHOT_SHOW": "quick"}, ["Search Kept", "Nothing kept yet", "Close"]),
-        ("quick-search-populated", {"KEPT_SNAPSHOT_SHOW": "quick"},
+        ("quick-search-populated", {"KEPT_SNAPSHOT_SHOW": "quick", "KEPT_SNAPSHOT_IMPORT": sample},
          ["Search Kept", "kept-icon", "Show in Library"]),
     ]
-    failures = []
-    for name, features, labels in cases:
+
+    # Every case gets its own library and preferences, so the windows can render side by side. Each one
+    # spends most of its time waiting for its window to settle, not using a processor.
+    def run_case(case):
+        name, features, labels = case
         suite = "app.kept.ui-tests." + str(uuid.uuid4())
         destination = work / name
         destination.mkdir()
         env = {key: value for key, value in os.environ.items() if not key.startswith("KEPT_")}
-        library = work / "library-grid" / "library" if name == "quick-search-populated" else destination / "library"
-        env.update(KEPT_HOME=str(library), KEPT_DEFAULTS_SUITE=suite, KEPT_SNAPSHOT_DIR=str(destination))
+        env.update(KEPT_HOME=str(destination / "library"), KEPT_DEFAULTS_SUITE=suite,
+                   KEPT_SNAPSHOT_DIR=str(destination))
         env.update(features)
         try:
             subprocess.run(["defaults", "write", suite, "didOnboard", "-bool", "true"], check=True)
@@ -71,26 +75,35 @@ def run_matrix(app, work):
             images = list(destination.glob("*.png"))
             if not images:
                 raise AssertionError(f"No windows captured. {log.read_text()}")
+            if compiler.wait():
+                raise AssertionError("The text recognizer did not compile.")
             text = json.loads(subprocess.check_output([str(recognizer), *map(str, images)], text=True, timeout=35))
             # A single captured window must contain all the expected labels.
             if not any(all(label.casefold() in screen.casefold() for label in labels) for screen in text.values()):
                 raise AssertionError(f"Expected {labels}. Captured text: {list(text.values())}")
-            print(f"PASS {name}", flush=True)
+            return None
         except (AssertionError, subprocess.SubprocessError) as error:
-            failures.append(name)
-            print(f"FAIL {name} — {error}", flush=True)
+            return error
         finally:
             subprocess.run(["defaults", "delete", suite], capture_output=True)
-    print(f"{len(cases)} native window checks, {len(failures)} failures")
+
+    failures = 0
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        for (name, _, _), error in zip(cases, pool.map(run_case, cases)):
+            failures += error is not None
+            print(f"FAIL {name} — {error}" if error else f"PASS {name}", flush=True)
+    print(f"{len(cases)} native window checks, {failures} failures")
     return bool(failures)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("app", nargs="?", type=Path, default=ROOT / "build/Kept.app")
+    parser.add_argument("--jobs", type=int, default=2 * (os.cpu_count() or 4),
+                        help="windows to render at once (default: twice the processor count)")
     args = parser.parse_args()
     executable = args.app.resolve() / "Contents/MacOS/Kept"
     if not executable.is_file():
         parser.error("Build Kept.app with scripts/build-app.sh first")
     with tempfile.TemporaryDirectory(prefix="kept-native-ui-") as directory:
-        raise SystemExit(run_matrix(executable, Path(directory)))
+        raise SystemExit(run_matrix(executable, Path(directory), max(1, args.jobs)))
