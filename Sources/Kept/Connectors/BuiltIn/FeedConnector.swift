@@ -17,8 +17,14 @@ struct FeedConnector: Connector {
         guard let url = URL(string: address), let scheme = url.scheme?.lowercased(),
               scheme == "http" || scheme == "https", url.host?.isEmpty == false
         else { throw ConnectorError.message("Enter the feed's full web address, starting with https://.") }
-        let data = try await ConnectorHTTP.get(
-            url, headers: ["Accept": "application/atom+xml, application/rss+xml, application/xml;q=0.9, */*;q=0.5"])
+        let data: Data
+        do {
+            data = try await ConnectorHTTP.get(
+                url, headers: ["Accept": "application/atom+xml, application/rss+xml, application/xml;q=0.9, */*;q=0.5"])
+        } catch ConnectorError.signInRejected {
+            // A feed has no sign-in to redo, so "sign in again" would send the user nowhere.
+            throw ConnectorError.message("\(url.host ?? "The server") refused to share this feed. It may be private or block feed readers.")
+        }
         let feed = FeedParser(base: url)
         guard feed.parse(data) else {
             throw ConnectorError.message("That address did not return an RSS or Atom feed.")

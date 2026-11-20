@@ -21,9 +21,23 @@ public enum ImageTools {
     /// Re-encodes any decodable image as PNG.
     public static func png(from data: Data) -> Data? {
         if isPNG(data) { return data }
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-        else { return nil }
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        // A photo can be stored sideways with an orientation tag saying how to turn it. PNG has no such
+        // tag, so the rotation has to be applied to the pixels or the saved image comes out on its side.
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let orientation = (properties?[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1
+        if orientation != 1 {
+            let size = pixelSize(data)
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: max(size.width, size.height, 1),
+            ]
+            if let upright = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) {
+                return encode(upright, type: .png, quality: nil)
+            }
+        }
+        guard let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
         return encode(image, type: .png, quality: nil)
     }
 

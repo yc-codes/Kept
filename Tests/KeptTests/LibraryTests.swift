@@ -23,6 +23,9 @@ func testLibrary() async throws {
     try check(library.items.map(\.id) == [note.id], "notes and favorites searchable")
     let preview = try library.previewURL(for: note).unwrap("text preview")
     try check(try String(contentsOf: preview, encoding: .utf8) == text, "preview preserves complete text")
+    try check(preview.lastPathComponent == "A field diary.txt", "Quick Look shows the item's title")
+    try check(LibraryStore.previewName(for: "a/b:c\nd. ") == "a b c d.txt" && LibraryStore.previewName(for: " / ") == "Text.txt",
+              "preview names are safe file names")
     var ownWrites = 0
     library.onOwnPasteboardWrite = { ownWrites += 1 }
     try check(library.copy(note) && ownWrites == 1 && board.string(forType: .string) == text, "copy text")
@@ -102,6 +105,42 @@ func testSearchAfterEdit() async throws {
     try check(library.items.isEmpty && library.selectedItem?.id == item.id, "and leaves again, still selected")
     library.searchText = ""
     try check(library.items.map(\.id) == [item.id] && library.selectedID == item.id, "clearing the search lists it")
+}
+
+/// A photo stored sideways with an orientation tag must be saved upright, not on its side.
+@MainActor
+func testRotatedPhotoImport() async throws {
+    let dir = try scratch("rotated")
+    // 4×2 pixels as stored, tagged "rotate 90° clockwise to display": upright it is 2 wide and 4 tall.
+    let context = try CGContext(
+        data: nil, width: 4, height: 2, bitsPerComponent: 8, bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue).unwrap("bitmap")
+    context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
+    context.fill(CGRect(x: 0, y: 0, width: 4, height: 2))
+    let stored = try context.makeImage().unwrap("stored pixels")
+    let output = NSMutableData()
+    let destination = try CGImageDestinationCreateWithData(output, "public.jpeg" as CFString, 1, nil).unwrap("JPEG writer")
+    CGImageDestinationAddImage(destination, stored, [kCGImagePropertyOrientation: 6] as CFDictionary)
+    try check(CGImageDestinationFinalize(destination), "write rotated JPEG")
+    let jpeg = output as Data
+
+    let png = try ImageTools.png(from: jpeg).unwrap("convert rotated JPEG")
+    let size = ImageTools.pixelSize(png)
+    try check(size.width == 2 && size.height == 4, "rotation applied to pixels, got \(size.width)×\(size.height)")
+
+    let db = try Database(url: dir.appendingPathComponent("test.sqlite"))
+    let board = NSPasteboard.withUniqueName()
+    defer { board.releaseGlobally() }
+    let library = LibraryStore(db: db, pasteboard: board)
+    let photo = dir.appendingPathComponent("portrait.jpg")
+    try jpeg.write(to: photo)
+    let vector = dir.appendingPathComponent("drawing.svg")
+    try Data("<svg xmlns='http://www.w3.org/2000/svg'/>".utf8).write(to: vector)
+    library.importFiles([photo, vector])
+    try await eventually("rotated photo imported") { library.selectedItem?.title == "portrait" }
+    let item = try library.selectedItem.unwrap("imported photo")
+    try check(item.width == 2 && item.height == 4, "library records the upright size")
+    try check(library.errorMessage?.contains("drawing.svg") == true, "an unreadable image file is reported by name")
 }
 
 @MainActor

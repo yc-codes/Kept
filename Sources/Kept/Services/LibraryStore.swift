@@ -190,17 +190,29 @@ final class LibraryStore: ObservableObject {
     /// Imports image files (dropped, opened with Kept, or chosen in the import panel).
     func importFiles(_ urls: [URL]) {
         var imported = false
+        var unreadable: [String] = []
         for url in urls {
-            guard UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true,
-                  let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size < 60_000_000,
-                  let data = try? Data(contentsOf: url)
-            else { continue }
+            guard UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true else { continue }
+            // Named an image but too large or not decodable (an SVG, a damaged file): say so rather than
+            // dropping it silently.
+            guard let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size < 60_000_000,
+                  let data = try? Data(contentsOf: url), ImageTools.pixelSize(data).width > 0
+            else {
+                unreadable.append(url.lastPathComponent)
+                continue
+            }
             imported = true
             ingest(
                 .image(data), method: .manual, source: nil, select: true,
                 title: url.deletingPathExtension().lastPathComponent)
         }
-        if !imported { NSSound.beep() }
+        if !unreadable.isEmpty {
+            let names = ListFormatter.localizedString(byJoining: unreadable.prefix(3).map { "“\($0)”" })
+            let more = unreadable.count > 3 ? " and \(unreadable.count - 3) more" : ""
+            errorMessage = "Kept could not read \(names)\(more) as an image. Files over 60 MB and vector images are not supported."
+        } else if !imported {
+            NSSound.beep()
+        }
     }
 
     func showImportPanel() {
@@ -368,7 +380,7 @@ final class LibraryStore: ObservableObject {
             return
         }
         Self.removeFiles(of: item)
-        try? FileManager.default.removeItem(at: Self.previewFile(for: item.id))
+        try? FileManager.default.removeItem(at: Self.previewFolder(for: item.id))
         ThumbnailCache.shared.forget(item.id)
         if lastSnip?.id == item.id { lastSnip = nil }
         if revealed?.id == item.id { revealed = nil }
@@ -422,8 +434,17 @@ final class LibraryStore: ObservableObject {
         return FileManager.default.temporaryDirectory.appendingPathComponent("KeptPreview", isDirectory: true)
     }()
 
-    private static func previewFile(for id: String) -> URL {
-        previewDirectory.appendingPathComponent(id + ".txt")
+    /// Each item gets its own folder so the file inside can carry the item's title, which is what Quick
+    /// Look shows in its title bar.
+    private static func previewFolder(for id: String) -> URL {
+        previewDirectory.appendingPathComponent(id, isDirectory: true)
+    }
+
+    nonisolated static func previewName(for title: String) -> String {
+        let cleaned = title.components(separatedBy: CharacterSet(charactersIn: "/:\\\0").union(.newlines).union(.controlCharacters))
+            .joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        let name = String(cleaned.prefix(60)).trimmingCharacters(in: CharacterSet(charactersIn: ". "))
+        return (name.isEmpty ? "Text" : name) + ".txt"
     }
 
     /// Text previews are temporary copies; none should survive a relaunch.
@@ -437,8 +458,11 @@ final class LibraryStore: ObservableObject {
         case .image: return item.assetURL
         case .link: return nil
         case .text:
-            try? FileManager.default.createDirectory(at: Self.previewDirectory, withIntermediateDirectories: true)
-            let url = Self.previewFile(for: item.id)
+            // Start from an empty folder: the title may have changed since the last preview.
+            let folder = Self.previewFolder(for: item.id)
+            try? FileManager.default.removeItem(at: folder)
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let url = folder.appendingPathComponent(Self.previewName(for: item.title))
             try? item.text.write(to: url, atomically: true, encoding: .utf8)
             return url
         }

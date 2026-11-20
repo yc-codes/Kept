@@ -84,6 +84,7 @@ enum TestRunner {
             ("editing a title or note refreshes the active search", testSearchAfterEdit),
             ("editing a paused feed connection keeps it paused", testPausedConnectorEdit),
             ("signature-only image payloads are rejected", testTruncatedImages),
+            ("sideways photos import upright and unreadable files are reported", testRotatedPhotoImport),
         ]
 
         var failures = 0
