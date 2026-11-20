@@ -42,7 +42,7 @@ def run_matrix(app, work):
         ("library-list", {"KEPT_SNAPSHOT_IMPORT": sample}, ["All Items", "Name", "Source", "Captured", "kept-icon"]),
         ("inspector", {"KEPT_SNAPSHOT_SHOW": "select", "KEPT_SNAPSHOT_IMPORT": sample},
          ["kept-icon", "Why did you save this", "Copy"]),
-        ("quick-search", {"KEPT_SNAPSHOT_SHOW": "quick"}, ["Search Kept", "Nothing kept yet", "Show in Library"]),
+        ("quick-search", {"KEPT_SNAPSHOT_SHOW": "quick"}, ["Search Kept", "Nothing kept yet", "Close"]),
         ("quick-search-populated", {"KEPT_SNAPSHOT_SHOW": "quick"},
          ["Search Kept", "kept-icon", "Show in Library"]),
     ]
