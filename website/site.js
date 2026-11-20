@@ -114,3 +114,89 @@ filters.forEach(button => button.addEventListener('click', () => {
 }));
 
 render();
+
+// Agents: the "Kept fix last 4" demo. The page ships its finished frame; this plays the story once when
+// the demo scrolls into view, and again on Replay.
+const agentDemo = document.querySelector('.agent-demo');
+const typed = agentDemo.querySelector('.demo-typed');
+const request = typed.textContent;
+const call = agentDemo.querySelector('.demo-call');
+const shots = [...agentDemo.querySelectorAll('.demo-shots li')];
+const done = agentDemo.querySelector('.demo-done');
+const replay = agentDemo.querySelector('.demo-replay');
+let demoTimer;
+
+function playDemo() {
+  clearTimeout(demoTimer);
+  agentDemo.classList.add('playing');
+  typed.textContent = '';
+  [call, done, ...shots].forEach(element => element.classList.add('waiting'));
+  shots.forEach(shot => shot.classList.remove('fixed'));
+
+  // Each step waits its delay after the one before it.
+  const steps = [];
+  for (let length = 1; length <= request.length; length++) {
+    steps.push([length === 1 ? 600 : 70, () => { typed.textContent = request.slice(0, length); }]);
+  }
+  steps.push([450, () => call.classList.remove('waiting')]);
+  shots.forEach((shot, index) => steps.push([index ? 160 : 500, () => shot.classList.remove('waiting')]));
+  shots.forEach((shot, index) => steps.push([index ? 750 : 900, () => shot.classList.add('fixed')]));
+  steps.push([500, () => {
+    done.classList.remove('waiting');
+    agentDemo.classList.remove('playing');
+  }]);
+
+  (function next() {
+    const step = steps.shift();
+    if (!step) return;
+    demoTimer = setTimeout(() => {
+      step[1]();
+      next();
+    }, step[0]);
+  })();
+}
+
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+  replay.hidden = false;
+  replay.addEventListener('click', playDemo);
+  const seen = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) {
+      seen.disconnect();
+      playDemo();
+    }
+  }, { threshold: 0.6 });
+  seen.observe(agentDemo);
+}
+
+// Agents: the terminal command for each agent. Kept keeps its server at the same path on every Mac.
+const installTabs = [...document.querySelectorAll('[data-agent]')];
+const installCodes = [...document.querySelectorAll('[data-command]')];
+const installCopy = document.querySelector('#install-copy');
+const installNote = document.querySelector('#install-note');
+let noteTimer;
+
+function shownInstall() {
+  return installCodes.find(code => code.classList.contains('on'));
+}
+
+installTabs.forEach(tab => tab.addEventListener('click', () => {
+  clearTimeout(noteTimer);
+  installTabs.forEach(other => other.setAttribute('aria-pressed', String(other === tab)));
+  installCodes.forEach(code => code.classList.toggle('on', code.dataset.command === tab.dataset.agent));
+  installNote.textContent = shownInstall().dataset.note;
+}));
+
+installCopy.addEventListener('click', async () => {
+  const code = shownInstall();
+  let copied = true;
+  try {
+    await navigator.clipboard.writeText(code.textContent);
+  } catch {
+    // No clipboard access: select the command so one keystroke copies it.
+    copied = false;
+    getSelection().selectAllChildren(code);
+  }
+  installNote.textContent = copied ? 'Copied to your clipboard.' : 'Selected. Press ⌘C to copy.';
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => { installNote.textContent = shownInstall().dataset.note; }, 2400);
+});

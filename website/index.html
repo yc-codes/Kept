@@ -109,17 +109,54 @@
     </section>
 
     <section id="agents" class="shell section">
+      <p class="eyebrow"><span></span> AGENTS</p>
+      <h2>Snip the bugs. Say <em>“Kept fix last 4”.</em></h2>
+      <p class="section-intro">Capture what is wrong as you spot it, then hand the lot to Claude Code or Codex in four words. Kept passes over your latest captures, with your notes, and the agent gets to work.</p>
       <div class="agent-panel">
-        <div>
-          <p class="eyebrow"><span></span> LOCAL BY DESIGN</p>
-          <h2>Your library lives on your Mac.</h2>
-          <p>Kept stores captures and its search index in a local SQLite library with image files alongside it. Connect Claude Code or Codex through Kept’s read-only MCP server to search and open saved items.</p>
+        <div class="agent-demo">
+          <p class="demo-bar"><span>CODING AGENT · ~/acme-web</span><button type="button" class="demo-replay" hidden>REPLAY ↺</button></p>
+          <div class="demo-screen" role="img" aria-label="Demo: typing “Kept fix last 4” in a coding agent. Kept returns the four latest snips, and the agent fixes what each one shows.">
+            <p class="demo-prompt"><b>›</b> <span class="demo-typed">Kept fix last 4</span><i></i></p>
+            <p class="demo-call"><b>kept</b> get_latest <span>count 4 · with images</span></p>
+            <ol class="demo-shots">
+              <li class="fixed"><span class="shot"><i></i></span><strong>Clipped title</strong><small>Header.tsx</small></li>
+              <li class="fixed"><span class="shot"><i></i></span><strong>Button overlap</strong><small>checkout.css</small></li>
+              <li class="fixed"><span class="shot"><i></i></span><strong>Wrong total</strong><small>cart.ts</small></li>
+              <li class="fixed"><span class="shot"><i></i></span><strong>Dead link</strong><small>Footer.tsx</small></li>
+            </ol>
+            <p class="demo-done"><b>✓</b> Fixed 4 of 4 <span>4 files changed</span></p>
+          </div>
         </div>
-        <div class="terminal">
-          <p>KEPT MCP <span>READ-ONLY</span></p>
-          <ul><li><code>search_library</code></li><li><code>get_item</code></li><li><code>list_recent</code></li></ul>
-          <small>Setup commands are in Settings → Agents.</small>
+        <div class="agent-setup">
+          <h3>Connect in one click.</h3>
+          <ol class="steps">
+            <li>Open <strong>Settings → Agents</strong> in Kept.</li>
+            <li>Click <strong>Connect</strong> beside Claude Code, Codex, Cursor, or Claude Desktop.</li>
+            <li>Start a new session and say <strong>Kept fix last 4</strong>.</li>
+          </ol>
+          <div class="install">
+            <div class="install-tabs" role="group" aria-label="Show the terminal command for">
+              <span>Or from a terminal</span>
+              <button type="button" data-agent="claude" aria-pressed="true">Claude Code</button>
+              <button type="button" data-agent="codex" aria-pressed="false">Codex</button>
+              <button type="button" data-agent="other" aria-pressed="false">Other</button>
+            </div>
+            <div class="install-command">
+              <div class="install-codes">
+                <code class="on" data-command="claude" data-note="The same command on every Mac. Open Kept once first.">claude mcp add <span>--scope</span> user kept <span>--</span> "$HOME/Library/Application Support/Kept/<span>kept-mcp"</span></code>
+                <code data-command="codex" data-note="The same command on every Mac. Open Kept once first.">codex mcp add kept <span>--</span> "$HOME/Library/Application Support/Kept/<span>kept-mcp"</span></code>
+                <code data-command="other" data-note="Run this path as a stdio server. Settings files need it written out in full.">~/Library/Application Support/Kept/<span>kept-mcp</span></code>
+              </div>
+              <button type="button" id="install-copy">Copy</button>
+            </div>
+            <p id="install-note" role="status">The same command on every Mac. Open Kept once first.</p>
+          </div>
         </div>
+      </div>
+      <div class="agent-facts">
+        <article><h3>Read-only.</h3><p>Agents can search your library and read what you saved. They cannot add, change, or delete anything.</p></article>
+        <article><h3>On your Mac.</h3><p>Captures and their search index live in a local SQLite library. An agent that runs its model in the cloud sends what it reads to that provider.</p></article>
+        <article><h3>Four tools.</h3><p><code>get_latest</code> for what you just captured, <code>search_library</code> and <code>list_recent</code> to find older items, and <code>get_item</code> to open one.</p></article>
       </div>
     </section>
 

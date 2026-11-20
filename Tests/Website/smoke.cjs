@@ -55,6 +55,33 @@ test('website demo, all filters, keyboard detail, theme persistence and responsi
     await dialog.getByRole('button', { name: 'Close capture' }).click();
     await dialog.waitFor({ state: 'hidden' });
 
+    // Agents: the demo plays to its finished frame, and each agent has its own terminal command.
+    const demo = page.locator('.agent-demo');
+    await demo.scrollIntoViewIfNeeded();
+    await page.locator('.agent-demo.playing').waitFor();
+    assert.equal(await demo.locator('.demo-shots li.fixed').count(), 0, 'the demo starts over when it plays');
+    await page.locator('.agent-demo:not(.playing)').waitFor({ timeout: 15000 });
+    assert.equal(await demo.locator('.demo-typed').textContent(), 'Kept fix last 4');
+    assert.equal(await demo.locator('.demo-shots li.fixed').count(), 4);
+    assert.equal(await demo.locator('.waiting').count(), 0);
+    await demo.getByRole('button', { name: /replay/i }).click();
+    assert.equal(await demo.locator('.demo-typed').textContent(), '');
+
+    const command = page.locator('.install-codes code.on');
+    const server = '"$HOME/Library/Application Support/Kept/kept-mcp"';
+    assert.equal(await command.textContent(), `claude mcp add --scope user kept -- ${server}`);
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    for (const [agent, expected] of [['Codex', `codex mcp add kept -- ${server}`], ['Other', '~/Library/Application Support/Kept/kept-mcp']]) {
+      await page.getByRole('button', { name: agent, exact: true }).click();
+      assert.equal(await page.locator('.install-codes code.on').count(), 1);
+      assert.equal(await command.textContent(), expected);
+      assert.equal(await page.locator('[data-agent][aria-pressed=true]').count(), 1);
+      await page.getByRole('button', { name: 'Copy', exact: true }).click();
+      await page.getByText(/Copied to your clipboard|Press ⌘C to copy/).waitFor();
+      const copied = await page.evaluate(() => navigator.clipboard.readText().catch(() => getSelection().toString()));
+      assert.equal(copied, expected);
+    }
+
     const theme = page.getByRole('button', { name: 'Switch to light theme' });
     await theme.click();
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
