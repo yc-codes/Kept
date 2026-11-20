@@ -7,6 +7,7 @@ import SwiftUI
 /// Drives its content with a 0...1 progress value that repeats every `period` seconds.
 struct Loop<Content: View>: View {
     let period: Double
+    var start = Date(timeIntervalSinceReferenceDate: 0)
     /// Progress shown when Reduce Motion is on: a frame where the story has finished.
     var resting = 0.85
     @ViewBuilder let content: (Double) -> Content
@@ -17,7 +18,7 @@ struct Loop<Content: View>: View {
             content(resting)
         } else {
             TimelineView(.animation) { context in
-                content(context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period) / period)
+                content(max(0, context.date.timeIntervalSince(start)).truncatingRemainder(dividingBy: period) / period)
             }
         }
     }
@@ -159,13 +160,29 @@ struct SnipDemo: View {
 
 // MARK: Shortcut
 
+struct ShortcutDemos: View {
+    let snip: Shortcut
+    let search: Shortcut
+    @Local private var start = Date()
+
+    var body: some View {
+        Loop(period: 5.6, start: start, resting: 0) { progress in
+            VStack(alignment: .leading, spacing: 12) {
+                ShortcutDemo(shortcut: snip, caption: "Snip, copied and saved", progress: progress * 2)
+                ShortcutDemo(shortcut: search, caption: "Search Kept from any app", progress: progress * 2 - 1)
+            }
+        }
+    }
+}
+
 /// Key caps for a shortcut, pressed together in a loop.
-struct ShortcutDemo: View {
+private struct ShortcutDemo: View {
     @Environment(\.keptAccent) private var accentChoice
     private var accent: Color { accentChoice.color }
 
     let shortcut: Shortcut
     let caption: String
+    let progress: Double
 
     private var keys: [String] {
         var modifiers: [String] = []
@@ -177,33 +194,31 @@ struct ShortcutDemo: View {
     }
 
     var body: some View {
-        Loop(period: 2.8, resting: 0) { p in
-            let down = ramp(p, 0.18, 0.26) * (1 - ramp(p, 0.46, 0.56))
-            HStack(spacing: 10) {
-                HStack(spacing: 5) {
-                    ForEach(keys, id: \.self) { key in
-                        Text(key)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .frame(minWidth: 30, minHeight: 30)
-                            .padding(.horizontal, key.count > 1 ? 8 : 0)
-                            .background {
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .fill(Color(nsColor: .controlBackgroundColor))
-                                    .shadow(color: .black.opacity(0.25), radius: 0, y: 2 - 2 * down)
-                            }
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .strokeBorder(down > 0.5 ? accent : Color(nsColor: .separatorColor))
-                            }
-                            .offset(y: 2 * down)
-                    }
+        let down = ramp(progress, 0.18, 0.26) * (1 - ramp(progress, 0.46, 0.56))
+        HStack(spacing: 10) {
+            HStack(spacing: 5) {
+                ForEach(keys, id: \.self) { key in
+                    Text(key)
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .frame(minWidth: 30, minHeight: 30)
+                        .padding(.horizontal, key.count > 1 ? 8 : 0)
+                        .background {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(Color(nsColor: .controlBackgroundColor))
+                                .shadow(color: .black.opacity(0.25), radius: 0, y: 2 - 2 * down)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .strokeBorder(down > 0.5 ? accent : Color(nsColor: .separatorColor))
+                        }
+                        .offset(y: 2 * down)
                 }
-                KeptIcon.arrowRight.image(size: 13)
-                    .foregroundStyle(.tertiary)
-                Text(caption)
-                    .font(.callout)
-                    .foregroundStyle(down > 0.5 ? Color.primary : Color.secondary)
             }
+            KeptIcon.arrowRight.image(size: 13)
+                .foregroundStyle(.tertiary)
+            Text(caption)
+                .font(.callout)
+                .foregroundStyle(down > 0.5 ? Color.primary : Color.secondary)
         }
         .accessibilityElement()
         .accessibilityLabel("\(shortcut.display): \(caption)")

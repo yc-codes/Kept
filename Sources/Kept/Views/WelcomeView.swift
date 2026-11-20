@@ -147,11 +147,8 @@ struct WelcomeView: View {
                 "Pick your shortcuts",
                 "These work in every app while Kept is running. Click a shortcut, then press the keys you want.")
             ShortcutRows()
-            VStack(alignment: .leading, spacing: 12) {
-                ShortcutDemo(shortcut: settings.snipShortcut, caption: "Snip, copied and saved")
-                ShortcutDemo(shortcut: settings.quickShortcut, caption: "Search Kept from any app")
-            }
-            .padding(.vertical, 4)
+            ShortcutDemos(snip: settings.snipShortcut, search: settings.quickShortcut)
+                .padding(.vertical, 4)
             Label("Kept stays in the menu bar when you close its window, so the shortcuts keep working.", icon: .window)
                 .font(.callout)
                 .foregroundStyle(.secondary)
