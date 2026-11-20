@@ -8,6 +8,8 @@ final class QuickSearchModel: ObservableObject {
     @Published var query = "" { didSet { refresh() } }
     @Published private(set) var results: [Item] = []
     @Published var index = 0
+    /// Bumped each time the panel is shown, to put the cursor back in the search field.
+    @Published var focusRequest = 0
 
     private let db: Database
 
@@ -85,6 +87,9 @@ final class QuickPanelController {
             panel.setFrame(NSRect(origin: origin, size: size), display: true)
         }
         panel.makeKeyAndOrderFront(nil)
+        // Focus asked for while the view is still being installed is sometimes dropped, leaving a panel
+        // that shows the cursor nowhere and ignores typing. Ask again once the panel is key.
+        DispatchQueue.main.async { [model] in model.focusRequest += 1 }
     }
 
     private func makePanel() -> QuickPanel {
@@ -145,7 +150,7 @@ struct QuickSearchView: View {
                     .foregroundStyle(.secondary)
                 TextField("Search Kept", text: $model.query)
                     .textFieldStyle(.plain)
-                    .font(LibraryPalette.heading(26))
+                    .font(.system(size: 22, weight: .medium))
                     .focused($focused)
             }
             .padding(.horizontal, 18)
@@ -159,6 +164,11 @@ struct QuickSearchView: View {
                         .foregroundStyle(.tertiary)
                     Text(model.query.isEmpty ? "Nothing kept yet" : "No matches for “\(model.query)”")
                         .foregroundStyle(.secondary)
+                    if model.query.isEmpty {
+                        Text("Snips and anything you save will show up here.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -185,11 +195,14 @@ struct QuickSearchView: View {
 
             Divider()
             HStack(spacing: 14) {
-                Text(model.query.isEmpty ? "Recent" : "\(model.results.count) results")
+                Text(model.query.isEmpty ? (model.results.isEmpty ? "" : "Recent") : "\(model.results.count) \(model.results.count == 1 ? "result" : "results")")
                 Spacer()
-                Text("↩ Copy")
-                Text("⌘↩ Show in Library")
-                Text("esc Close")
+                // Only offer actions that have something to act on.
+                if !model.results.isEmpty {
+                    hint("↩", "Copy")
+                    hint("⌘↩", "Show in Library")
+                }
+                hint("esc", "Close")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -197,9 +210,24 @@ struct QuickSearchView: View {
             .padding(.vertical, 8)
         }
         .background(LibraryPalette.canvas)
-        .tint(LibraryPalette.accent)
+        .keptTheme()
         .ignoresSafeArea()
         .onAppear { focused = true }
+        .onChange(of: model.focusRequest) { focused = true }
+    }
+}
+
+private extension QuickSearchView {
+    func hint(_ keys: String, _ action: String) -> some View {
+        HStack(spacing: 5) {
+            Text(keys)
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(LibraryPalette.inset, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+            Text(action)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -213,7 +241,7 @@ private struct QuickRow: View {
                 .frame(width: 44, height: 34)
                 .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.title)
+                Text(item.displayTitle)
                     .lineLimit(1)
                 Text(detail)
                     .font(.caption)
@@ -221,13 +249,15 @@ private struct QuickRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            Text(item.createdAt.formatted(.relative(presentation: .named)))
+            Text(item.age())
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 5)
-        .background(selected ? LibraryPalette.selection : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .background(
+            selected ? AnyShapeStyle(LibraryPalette.accent.opacity(0.18)) : AnyShapeStyle(Color.clear),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

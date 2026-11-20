@@ -41,7 +41,7 @@ struct CaptureSourceList: View {
     ) -> some View {
         HStack(spacing: 12) {
             symbol.image()
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(LibraryPalette.accent)
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
@@ -77,7 +77,12 @@ struct ExclusionsEditor: View {
                 }
             }
             .listStyle(.bordered)
-            .frame(height: height)
+            // An empty list is one line of text; it grows to full height once there is something in it.
+            .frame(height: settings.excludedApps.isEmpty ? 40 : height)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color(nsColor: .separatorColor))
+            }
             .overlay {
                 if settings.excludedApps.isEmpty {
                     Text("No extra apps excluded")

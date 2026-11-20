@@ -130,7 +130,7 @@ private struct ConnectionRow: View {
     var body: some View {
         HStack(spacing: 12) {
             (connection.connector?.icon ?? .question).image()
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(LibraryPalette.accent)
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {
                 Text(connection.name)
@@ -201,7 +201,7 @@ private struct ConnectSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
                 connector.icon.image(size: 24)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(LibraryPalette.accent)
                     .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(draft.existing == nil ? "Connect \(connector.name)" : "Edit \(draft.existing!.name)")
@@ -247,6 +247,7 @@ private struct ConnectSheet: View {
                     }
                     Link(destination: help.url) {
                         Label(help.title, icon: .arrowSquareOut)
+                            .foregroundStyle(LibraryPalette.accent)
                     }
                 }
                 .font(.callout)
@@ -265,6 +266,7 @@ private struct ConnectSheet: View {
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button(draft.existing == nil ? "Connect" : "Save") { connect() }
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(working || !isComplete)
             }

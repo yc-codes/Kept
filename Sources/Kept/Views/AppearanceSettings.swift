@@ -4,27 +4,115 @@ struct AppearanceSettingsTab: View {
     @EnvironmentObject private var settings: CaptureSettings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Theme")
-                    .font(LibraryPalette.heading(24))
-                    .accessibilityAddTraits(.isHeader)
-                Text("Choose how Kept looks, or match your Mac’s appearance.")
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(spacing: 12) {
-                ForEach(AppTheme.allCases, id: \.self) { theme in
-                    themeButton(theme)
+        VStack(alignment: .leading, spacing: 20) {
+            section("Theme", "Choose how Kept looks, or match your Mac’s appearance.") {
+                HStack(spacing: 12) {
+                    ForEach(AppTheme.allCases, id: \.self) { theme in
+                        themeButton(theme)
+                    }
                 }
             }
+
+            section("Accent color", "Used for selection, primary buttons and highlights.") {
+                HStack(spacing: 10) {
+                    ForEach(AccentChoice.allCases) { accent in
+                        AccentSwatch(accent: accent, selected: settings.accent == accent) {
+                            settings.accent = accent
+                        }
+                    }
+                    Spacer(minLength: 8)
+                    Text(settings.accent.label)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .settingsCard()
+            }
+
+            section("Library", "How saved items are laid out in the main window.") {
+                VStack(spacing: 0) {
+                    row("Card size", "Smaller cards fit more on screen.") {
+                        // Drawn by hand: the system segmented control brightens the tint under its white
+                        // label, which made some accents hard to read.
+                        HStack(spacing: 2) {
+                            ForEach(CardSize.allCases) { size in
+                                let selected = settings.cardSize == size
+                                Button {
+                                    settings.cardSize = size
+                                } label: {
+                                    Text(size.label)
+                                        .font(.callout.weight(selected ? .semibold : .regular))
+                                        .foregroundStyle(selected ? AnyShapeStyle(LibraryPalette.accent) : AnyShapeStyle(.primary))
+                                        .padding(.horizontal, 12)
+                                        .frame(height: 24)
+                                        .background(
+                                            selected ? AnyShapeStyle(LibraryPalette.accent.opacity(0.16)) : AnyShapeStyle(Color.clear),
+                                            in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(selected ? .isSelected : [])
+                            }
+                        }
+                        .padding(2)
+                        .background(LibraryPalette.inset.opacity(0.6), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel("Card size")
+                    }
+                    Divider().padding(.leading, 12)
+                    row("Crop images to fill cards", "Turn off to see each picture whole.") {
+                        Toggle("Crop images to fill cards", isOn: $settings.cropThumbnails).labelsHidden()
+                    }
+                    Divider().padding(.leading, 12)
+                    row("Show counts in the sidebar", "The number of items next to each filter.") {
+                        Toggle("Show counts in the sidebar", isOn: $settings.showSidebarCounts).labelsHidden()
+                    }
+                }
+                .toggleStyle(.switch)
+                .settingsCard()
+            }
         }
-        .padding(24)
+        .padding(20)
+    }
+
+    private func section<Content: View>(
+        _ title: String, _ detail: String, @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                Text(detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            content()
+        }
+    }
+
+    private func row<Control: View>(
+        _ title: String, _ detail: String, @ViewBuilder control: () -> Control
+    ) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 12)
+            control()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
     }
 
     private func themeButton(_ theme: AppTheme) -> some View {
         let selected = settings.theme == theme
-        let shape = RoundedRectangle(cornerRadius: 12)
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
         return Button {
             settings.theme = theme
@@ -34,7 +122,7 @@ struct AppearanceSettingsTab: View {
                     .accessibilityHidden(true)
                 HStack(spacing: 5) {
                     theme.icon.image()
-                        .foregroundStyle(selected ? LibraryPalette.accent : Color.secondary)
+                        .foregroundStyle(selected ? AnyShapeStyle(LibraryPalette.accent) : AnyShapeStyle(.secondary))
                         .accessibilityHidden(true)
                     Text(theme.rawValue.capitalized)
                         .font(.callout.weight(.semibold))
@@ -51,13 +139,55 @@ struct AppearanceSettingsTab: View {
             .padding(.bottom, 2)
             .background(LibraryPalette.surface, in: shape)
             .overlay {
-                shape.strokeBorder(selected ? LibraryPalette.accent : LibraryPalette.line, lineWidth: selected ? 2 : 1)
+                shape.strokeBorder(
+                    selected ? AnyShapeStyle(LibraryPalette.accent) : AnyShapeStyle(LibraryPalette.line),
+                    lineWidth: selected ? 2 : 1)
             }
             .contentShape(shape)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityHint(theme == .system ? "Follows the macOS appearance" : "")
+    }
+}
+
+private struct AccentSwatch: View {
+    let accent: AccentChoice
+    let selected: Bool
+    let action: () -> Void
+    @Local private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Circle()
+                .fill(accent.color)
+                .frame(width: 22, height: 22)
+                .overlay {
+                    if selected {
+                        KeptIcon.check.image(size: 12)
+                            .foregroundStyle(LibraryPalette.surface)
+                    }
+                }
+                .padding(4)
+                .overlay {
+                    Circle().strokeBorder(accent.color.opacity(selected ? 1 : (hovering ? 0.45 : 0)), lineWidth: 2)
+                }
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(accent.label)
+        .accessibilityLabel(accent.label)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+extension View {
+    /// The rounded, bordered group that settings rows sit in.
+    func settingsCard() -> some View {
+        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        return background(Color(nsColor: .controlBackgroundColor), in: shape)
+            .overlay { shape.strokeBorder(Color(nsColor: .separatorColor)) }
     }
 }
 

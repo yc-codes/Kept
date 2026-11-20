@@ -25,13 +25,16 @@ struct ThumbnailView: View {
 struct ItemPreview: View {
     let item: Item
     var compact = false
+    /// Fill the frame with the picture, cropping its edges. Off shows it whole.
+    var crop = true
 
     var body: some View {
         switch item.kind {
         case .image:
             LibraryPalette.inset
                 .overlay {
-                    ThumbnailView(item: item, contentMode: .fill)
+                    ThumbnailView(item: item, contentMode: crop ? .fill : .fit)
+                        .padding(crop ? 0 : 6)
                 }
                 .clipped()
         case .text:
@@ -75,7 +78,7 @@ struct ItemPreview: View {
             .padding(compact ? 2 : 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: compact ? .center : .topLeading)
             .foregroundStyle(.white)
-            .background(Color(white: 0.20))
+            .background(LibraryPalette.linkTile)
         }
     }
 }
@@ -83,11 +86,14 @@ struct ItemPreview: View {
 struct ItemCard: View {
     let item: Item
     let selected: Bool
+    var previewHeight: CGFloat = 152
+    var crop = true
+    @Local private var hovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ItemPreview(item: item)
-                .frame(height: 152)
+            ItemPreview(item: item, crop: crop)
+                .frame(height: previewHeight)
                 .clipped()
                 .overlay(alignment: .bottomTrailing) {
                     if item.isGIF {
@@ -108,7 +114,7 @@ struct ItemCard: View {
                     item.icon.image()
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
-                    Text(item.title)
+                    Text(item.displayTitle)
                         .fontWeight(.semibold)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -124,8 +130,11 @@ struct ItemCard: View {
                         KeptIcon.note.image(size: 14)
                             .help(item.note)
                     }
-                    Text(subtitle)
-                        .lineLimit(1)
+                    // Re-read every minute so "5 minutes ago" does not go stale while the window stays open.
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        Text(subtitle(at: context.date))
+                            .lineLimit(1)
+                    }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -134,17 +143,25 @@ struct ItemCard: View {
             .padding(.vertical, 10)
         }
         .background(selected ? LibraryPalette.selection : LibraryPalette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(selected ? LibraryPalette.accent : LibraryPalette.line, lineWidth: selected ? 2 : 1)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(border, lineWidth: selected ? 2 : 1)
         }
+        .shadow(color: .black.opacity(hovering && !selected ? 0.10 : 0), radius: 8, y: 3)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
-    private var subtitle: String {
-        let when = item.createdAt.formatted(.relative(presentation: .named))
+    private var border: AnyShapeStyle {
+        if selected { return AnyShapeStyle(LibraryPalette.accent) }
+        return hovering ? AnyShapeStyle(Color.primary.opacity(0.28)) : AnyShapeStyle(LibraryPalette.line)
+    }
+
+    private func subtitle(at now: Date) -> String {
+        let when = item.age(at: now)
         if !item.note.isEmpty { return item.note.replacingOccurrences(of: "\n", with: " ") }
         if let app = item.sourceApp { return "\(app) · \(when)" }
         return when

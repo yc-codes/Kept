@@ -35,6 +35,9 @@ private func mix(_ a: Double, _ b: Double, _ t: Double) -> Double { a + (b - a) 
 
 /// Drag over part of the screen; the snip lands on the clipboard and in the library.
 struct SnipDemo: View {
+    @Environment(\.keptAccent) private var accentChoice
+    private var accent: Color { accentChoice.color }
+
     var body: some View {
         Loop(period: 5.2) { p in
             ZStack(alignment: .topLeading) {
@@ -95,10 +98,10 @@ struct SnipDemo: View {
         let fade = 1 - ramp(p, 0.44, 0.52)
         let target = photo.insetBy(dx: -7, dy: -7)
         return RoundedRectangle(cornerRadius: 3)
-            .fill(Color.accentColor.opacity(0.14 + 0.5 * flash(p)))
+            .fill(accent.opacity(0.14 + 0.5 * flash(p)))
             .overlay {
                 RoundedRectangle(cornerRadius: 3)
-                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                    .strokeBorder(accent, style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
             }
             .frame(width: max(target.width * grow, 0.1), height: max(target.height * grow, 0.1))
             .offset(x: target.minX, y: target.minY + 9)
@@ -134,7 +137,7 @@ struct SnipDemo: View {
         return VStack(spacing: 4) {
             ZStack(alignment: .bottomTrailing) {
                 symbol.image(size: 20)
-                    .foregroundStyle(landed > 0.5 ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(landed > 0.5 ? accent : Color.secondary)
                 KeptIcon.checkCircle.image(size: 12)
                     .foregroundStyle(.green)
                     .scaleEffect(landed)
@@ -148,7 +151,7 @@ struct SnipDemo: View {
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(landed > 0.5 ? Color.accentColor.opacity(0.6) : Color(nsColor: .separatorColor))
+                .strokeBorder(landed > 0.5 ? accent.opacity(0.6) : Color(nsColor: .separatorColor))
         }
         .offset(x: 268, y: y)
     }
@@ -158,6 +161,9 @@ struct SnipDemo: View {
 
 /// Key caps for a shortcut, pressed together in a loop.
 struct ShortcutDemo: View {
+    @Environment(\.keptAccent) private var accentChoice
+    private var accent: Color { accentChoice.color }
+
     let shortcut: Shortcut
     let caption: String
 
@@ -187,7 +193,7 @@ struct ShortcutDemo: View {
                             }
                             .overlay {
                                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .strokeBorder(down > 0.5 ? Color.accentColor : Color(nsColor: .separatorColor))
+                                    .strokeBorder(down > 0.5 ? accent : Color(nsColor: .separatorColor))
                             }
                             .offset(y: 2 * down)
                     }
@@ -206,6 +212,8 @@ struct ShortcutDemo: View {
 
 /// A small stack of saved media, shared by onboarding and the empty library.
 struct CaptureStack: View {
+    @Environment(\.keptAccent) private var accentChoice
+
     var body: some View {
         ZStack {
             tile(.textAlignLeft, background: LibraryPalette.surface, ink: .secondary)
@@ -214,7 +222,7 @@ struct CaptureStack: View {
             tile(.link, background: LibraryPalette.selection, ink: .primary)
                 .rotationEffect(.degrees(15))
                 .offset(x: 48, y: 4)
-            tile(.cornersOut, background: Color(red: 0.85, green: 0.31, blue: 0.18), ink: .white)
+            tile(.cornersOut, background: accentChoice.color, ink: LibraryPalette.surface)
                 .rotationEffect(.degrees(-5))
         }
         .frame(width: 210, height: 110)
@@ -238,6 +246,9 @@ struct CaptureStack: View {
 
 /// A question asked in an agent, answered with a saved item.
 struct AgentDemo: View {
+    @Environment(\.keptAccent) private var accentChoice
+    private var accent: Color { accentChoice.color }
+
     private let question = "Which screenshot did I save for onboarding?"
 
     var body: some View {
@@ -250,10 +261,10 @@ struct AgentDemo: View {
                     Spacer(minLength: 40)
                     Text(String(question.prefix(max(typed, 1))))
                         .font(.callout)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(LibraryPalette.surface)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 ZStack(alignment: .topLeading) {
                     HStack(spacing: 5) {
@@ -280,7 +291,7 @@ struct AgentDemo: View {
                                 .foregroundStyle(.secondary)
                             Text("kept://item/k7vdrd9be")
                                 .font(.system(.caption2, design: .monospaced))
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(accent)
                         }
                     }
                     .padding(8)

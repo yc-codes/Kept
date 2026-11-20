@@ -22,9 +22,18 @@ struct InspectorView: View {
             VStack(alignment: .leading, spacing: 18) {
                 TextField("Title", text: $title, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .font(LibraryPalette.heading(26))
+                    .font(LibraryPalette.heading(20))
                     .lineLimit(1...3)
                     .onChange(of: title) { library.setTitle(item.id, title) }
+
+                if item.kind == .link {
+                    // The whole address, right under the title: the tile below can only show part of it.
+                    Text(item.text)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .padding(.top, -10)
+                }
 
                 preview
 
@@ -63,15 +72,6 @@ struct InspectorView: View {
                     .overlay {
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .strokeBorder(LibraryPalette.line)
-                    }
-                }
-
-                if item.kind == .link {
-                    section("Link") {
-                        Text(item.text)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
                     }
                 }
 
@@ -121,7 +121,6 @@ struct InspectorView: View {
             .padding(18)
         }
         .background(LibraryPalette.sidebar)
-        .tint(LibraryPalette.accent)
     }
 
     private var primaryActions: some View {
@@ -154,7 +153,7 @@ struct InspectorView: View {
                 library.toggleFavorite(item)
             } label: {
                 (item.favorite ? KeptIcon.starFill : .star).image()
-                    .foregroundStyle(item.favorite ? LibraryPalette.accent : Color.secondary)
+                    .foregroundStyle(item.favorite ? AnyShapeStyle(LibraryPalette.accent) : AnyShapeStyle(.secondary))
             }
             .buttonStyle(.bordered)
             .accessibilityLabel(item.favorite ? "Remove from Favorites" : "Add to Favorites")

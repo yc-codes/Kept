@@ -34,16 +34,20 @@ struct WelcomeView: View {
                 HStack(spacing: 6) {
                     ForEach(0...lastStep, id: \.self) { index in
                         Circle()
-                            .fill(index == step ? LibraryPalette.accent : Color.secondary.opacity(0.3))
+                            .fill(index == step ? AnyShapeStyle(LibraryPalette.accent) : AnyShapeStyle(Color.secondary.opacity(0.3)))
                             .frame(width: 6, height: 6)
                     }
                 }
                 Spacer()
                 if step < lastStep {
+                    // Prominent style so the button takes Kept's accent; a plain default button is always
+                    // drawn in the macOS accent colour.
                     Button("Continue") { step += 1 }
+                        .buttonStyle(.borderedProminent)
                         .keyboardShortcut(.defaultAction)
                 } else {
                     Button(practiceSnip == nil ? "Skip for Now" : "Open Library", action: finish)
+                        .buttonStyle(.borderedProminent)
                         .keyboardShortcut(.defaultAction)
                 }
             }
@@ -52,7 +56,7 @@ struct WelcomeView: View {
         }
         .frame(width: 600, height: 560)
         .background(LibraryPalette.canvas)
-        .tint(LibraryPalette.accent)
+        .keptTheme()
         .onChange(of: library.lastSnip) {
             if step == lastStep { practiceSnip = library.lastSnip }
         }
@@ -117,7 +121,7 @@ struct WelcomeView: View {
         VStack(alignment: .leading, spacing: 16) {
             header(
                 "Choose what Kept saves",
-                "Nothing you copy is saved until you switch it on here. You can change this any time in Settings, and pause everything from the menu bar.")
+                "Nothing you copy is saved until you switch it on here. You can change this any time in Settings, and pause clipboard capture from the menu bar.")
             CaptureSourceList()
             DisclosureGroup(isExpanded: $showExclusions) {
                 ExclusionsEditor(height: 84)

@@ -40,6 +40,26 @@ func testCaptureSettings() throws {
         settings.theme = theme
         try check(CaptureSettings(defaults: defaults).theme == theme, "\(theme) persists")
     }
+    try check(settings.accent == .terracotta && settings.cardSize == .medium && settings.cropThumbnails
+              && settings.showSidebarCounts, "appearance defaults")
+    for accent in AccentChoice.allCases {
+        settings.accent = accent
+        try check(CaptureSettings(defaults: defaults).accent == accent, "\(accent) accent persists")
+    }
+    for size in CardSize.allCases {
+        settings.cardSize = size
+        try check(CaptureSettings(defaults: defaults).cardSize == size, "\(size) card size persists")
+    }
+    try check(CardSize.small.minWidth < CardSize.medium.minWidth && CardSize.medium.minWidth < CardSize.large.minWidth,
+              "card sizes grow in order")
+    settings.cropThumbnails = false
+    settings.showSidebarCounts = false
+    let look = CaptureSettings(defaults: defaults)
+    try check(!look.cropThumbnails && !look.showSidebarCounts, "switched-off appearance options persist")
+    defaults.set("invalid accent", forKey: "accent")
+    defaults.set("huge", forKey: "cardSize")
+    let fallback = CaptureSettings(defaults: defaults)
+    try check(fallback.accent == .terracotta && fallback.cardSize == .medium, "invalid appearance values restore defaults")
     try check(AppTheme.light.appearance?.name == .aqua && AppTheme.dark.appearance?.name == .darkAqua,
               "appearance mapping")
 

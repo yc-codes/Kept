@@ -24,6 +24,77 @@ enum AppTheme: String, CaseIterable {
     }
 }
 
+/// The colour Kept uses for selection, primary buttons and highlights. Each choice has a light and a dark
+/// value picked to stay readable as text on Kept's own backgrounds.
+enum AccentChoice: String, CaseIterable, Identifiable {
+    case terracotta, amber, green, teal, blue, violet, pink, graphite
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .terracotta: return "Terracotta"
+        case .amber: return "Amber"
+        case .green: return "Green"
+        case .teal: return "Teal"
+        case .blue: return "Blue"
+        case .violet: return "Violet"
+        case .pink: return "Pink"
+        case .graphite: return "Graphite"
+        }
+    }
+
+    /// sRGB hex for light and dark appearances.
+    var hex: (light: UInt32, dark: UInt32) {
+        switch self {
+        case .terracotta: return (0xA93820, 0xFF9A79)
+        case .amber: return (0x8F5500, 0xFFC25C)
+        case .green: return (0x2A7541, 0x7FD99A)
+        case .teal: return (0x0B7478, 0x5CD6D0)
+        case .blue: return (0x2360D1, 0x82B1FF)
+        case .violet: return (0x6A43C6, 0xB9A1FF)
+        case .pink: return (0xB3306B, 0xFF93BD)
+        case .graphite: return (0x55555C, 0xB4B4BD)
+        }
+    }
+
+    /// Fill for system controls that draw a white label on it (prominent buttons, switches). The system
+    /// brightens whatever it is given, most of all in dark mode, so the warm and pale hues get deeper
+    /// values here to keep the label readable.
+    var controlHex: (light: UInt32, dark: UInt32) {
+        switch self {
+        case .amber: return (0x764600, 0x6B3F00)
+        case .teal: return (0x09666A, 0x095B5E)
+        case .green: return (hex.light, 0x236337)
+        default: return (hex.light, hex.light)
+        }
+    }
+}
+
+/// How large the cards in the library grid are.
+enum CardSize: String, CaseIterable, Identifiable {
+    case small, medium, large
+
+    var id: String { rawValue }
+    var label: String { rawValue.capitalized }
+
+    var minWidth: CGFloat {
+        switch self {
+        case .small: return 158
+        case .medium: return 205
+        case .large: return 280
+        }
+    }
+
+    var previewHeight: CGFloat {
+        switch self {
+        case .small: return 112
+        case .medium: return 152
+        case .large: return 208
+        }
+    }
+}
+
 struct ExcludedApp: Codable, Identifiable, Hashable {
     var bundleID: String
     var name: String
@@ -51,6 +122,12 @@ final class CaptureSettings: ObservableObject {
         }
     }
 
+    @Published var accent: AccentChoice { didSet { defaults.set(accent.rawValue, forKey: "accent") } }
+    @Published var cardSize: CardSize { didSet { defaults.set(cardSize.rawValue, forKey: "cardSize") } }
+    /// Off shows each picture whole inside its card instead of cropping it to fill.
+    @Published var cropThumbnails: Bool { didSet { defaults.set(cropThumbnails, forKey: "cropThumbnails") } }
+    @Published var showSidebarCounts: Bool { didSet { defaults.set(showSidebarCounts, forKey: "showSidebarCounts") } }
+
     @Published var captureImages: Bool { didSet { defaults.set(captureImages, forKey: "captureImages") } }
     @Published var captureLinks: Bool { didSet { defaults.set(captureLinks, forKey: "captureLinks") } }
     @Published var captureText: Bool { didSet { defaults.set(captureText, forKey: "captureText") } }
@@ -68,6 +145,12 @@ final class CaptureSettings: ObservableObject {
     init(defaults: UserDefaults = KeptDefaults.store) {
         self.defaults = defaults
         theme = defaults.string(forKey: "theme").flatMap(AppTheme.init(rawValue:)) ?? .system
+        accent = defaults.string(forKey: "accent").flatMap(AccentChoice.init(rawValue:)) ?? .terracotta
+        cardSize = defaults.string(forKey: "cardSize").flatMap(CardSize.init(rawValue:)) ?? .medium
+        // These two default to on, so an absent key must not read as false.
+        cropThumbnails = defaults.object(forKey: "cropThumbnails") == nil || defaults.bool(forKey: "cropThumbnails")
+        showSidebarCounts = defaults.object(forKey: "showSidebarCounts") == nil
+            || defaults.bool(forKey: "showSidebarCounts")
         captureImages = defaults.bool(forKey: "captureImages")
         captureLinks = defaults.bool(forKey: "captureLinks")
         captureText = defaults.bool(forKey: "captureText")

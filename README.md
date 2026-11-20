@@ -47,7 +47,7 @@ archives use ad-hoc signatures and are unnotarized.
 | Find something you saved | Search the library or press **⌃⌥K** to open Quick Search from another app. Search matches titles, saved text and URLs, notes, and text recognized in images. |
 
 Select an item and open the inspector to edit its title or add a note. Use the **Favorites** filter
-to find starred items. Change the theme in **Settings › Appearance** and the global shortcuts in
+to find starred items. Change the theme, accent color, card size and other display options in **Settings › Appearance** and the global shortcuts in
 **Settings › Shortcuts**.
 
 ### Screen capture permissions
