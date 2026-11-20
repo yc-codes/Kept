@@ -6,9 +6,10 @@
   --ink: #f8f4ec;
   --muted: #bab5aa;
   --line: #383631;
+  /* Edges of things you can click or type in: stronger than dividers so the control is visible. */
+  --control-line: #6f6b62;
   --accent: #ff977c;
   --on-accent: #251813;
-  --stage: #de795f;
   --serif: Georgia, 'Times New Roman', serif;
   --mono: ui-monospace, 'SF Mono', Consolas, monospace;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -21,12 +22,14 @@
   --ink: #211e1a;
   --muted: #5f574e;
   --line: #dad2c5;
+  --control-line: #988d7c;
   --accent: #a93820;
   --on-accent: #fff9f2;
-  --stage: #efaa92;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+/* The page behind an open detail dialog must not scroll away from the card that opened it. */
+html:has(#item-dialog[open]) { overflow: hidden; }
 body { margin: 0; background: var(--bg); color: var(--ink); }
 body, button, input { font-size: 15px; }
 a { color: inherit; text-decoration: none; }
@@ -43,7 +46,7 @@ nav, .top-actions { display: flex; align-items: center; gap: 30px; }
 nav { color: var(--muted); font-size: 14px; }
 nav a:hover, .footer a:hover { color: var(--accent); }
 .top-actions { justify-content: end; gap: 12px; }
-.theme, .small-button { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+.theme, .small-button { border: 1px solid var(--control-line); border-radius: 8px; background: var(--surface); min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
 .theme { width: 38px; font-size: 20px; }
 .small-button { padding: 0 13px; font-size: 13px; font-weight: 650; white-space: nowrap; }
 .small-button:hover, .theme:hover, .secondary:hover { border-color: var(--accent); }
@@ -51,17 +54,19 @@ nav a:hover, .footer a:hover { color: var(--accent); }
 .eyebrow { font: 11px/1.4 var(--mono); color: var(--muted); letter-spacing: .15em; margin: 0 0 20px; }
 .eyebrow span, figcaption i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 5px; vertical-align: 1px; }
 h1, h2, h3, p { margin-top: 0; }
-h1 { font-size: clamp(56px, 8.2vw, 114px); line-height: .91; font-weight: 680; letter-spacing: -.085em; margin-bottom: 23px; }
-h1 em { font: italic 400 1em/.96 var(--serif); letter-spacing: -.083em; color: var(--accent); padding-right: .07em; }
+h1 { font-size: clamp(56px, 8.2vw, 114px); line-height: .91; font-weight: 680; letter-spacing: -.065em; margin-bottom: 23px; }
+h1 em { font: italic 400 1em/.96 var(--serif); letter-spacing: -.06em; color: var(--accent); padding-right: .07em; }
+/* "your eye." wraps as one piece, never leaving "eye." on a line of its own. */
+h1 .keep { white-space: nowrap; }
 .intro, .section-intro, .get p, .agent-panel p:not(.eyebrow) { color: var(--muted); line-height: 1.6; }
 .intro { max-width: 410px; margin: 0 auto 23px; font-size: 17px; }
 .actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
 .button { display: inline-flex; justify-content: center; align-items: center; gap: 18px; min-height: 46px; padding: 0 17px; border: 1px solid transparent; border-radius: 8px; font-size: 14px; font-weight: 650; }
 .primary { background: var(--accent); color: var(--on-accent); }
 .primary:hover { filter: brightness(1.12); }
-.secondary { background: var(--surface); border-color: var(--line); }
+.secondary { background: var(--surface); border-color: var(--control-line); }
 .showcase { margin: 0; }
-.stage { position: relative; display: grid; place-items: center; padding: 5.5% 9%; overflow: hidden; border-radius: 15px; background: radial-gradient(ellipse at 50% 75%, #482b31a8, transparent 64%), radial-gradient(ellipse at 8% 4%, #fac1a2aa, transparent 54%), radial-gradient(circle at center, #3c23285c .65px, transparent .9px) 0 0/6px 6px, var(--stage); }
+.stage { position: relative; display: grid; place-items: center; padding: 10% 7%; overflow: hidden; border-radius: 15px; background: linear-gradient(120deg, #30283122, #442d3020), url("assets/coast.webp") center / cover; }
 .stage::before { content: ''; position: absolute; inset: 19px; border: 1px solid #fff2dc40; border-radius: 5px; pointer-events: none; }
 .corner { position: absolute; z-index: 1; width: 14px; height: 14px; border-color: #ffede1bb; border-style: solid; border-width: 0; }
 .tl { top: 18px; left: 18px; border-top-width: 1px; border-left-width: 1px; }
@@ -84,18 +89,21 @@ kbd { border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; white
 .demo { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
 .demo-toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
 .demo-toolbar strong { display: flex; align-items: center; gap: 7px; }
-input { width: min(100%, 320px); padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+input { width: min(100%, 320px); padding: 10px 12px; border: 1px solid var(--control-line); border-radius: 8px; background: var(--bg); }
 input::placeholder { color: var(--muted); }
 .filters { display: flex; flex-wrap: wrap; gap: 7px; margin: 18px 0 0; }
-.filters button { padding: 7px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); font-size: 13px; }
+.filters button { padding: 7px 11px; border: 1px solid var(--control-line); border-radius: 7px; background: var(--bg); font-size: 13px; }
+.filters button:hover { border-color: var(--accent); }
 .filters button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #result-count { color: var(--muted); font-size: 13px; margin: 14px 0; }
 .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .capture { min-width: 0; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 0 0 12px; overflow: hidden; }
 .capture:hover { border-color: var(--accent); }
-.capture-preview { aspect-ratio: 2; background: var(--inset); display: grid; place-items: center; padding: 0 16px; color: var(--muted); line-height: 1.4; font-size: 14px; }
+/* The wrapper owns the shape, so a photo arriving late cannot change the card's height, and long
+   addresses break inside it instead of being cut off at the edge. */
+.capture-preview { position: relative; min-width: 0; aspect-ratio: 2; overflow: hidden; overflow-wrap: anywhere; background: var(--inset); display: grid; place-items: center; padding: 0 16px; color: var(--muted); line-height: 1.4; font-size: 14px; }
 .capture-preview:has(img) { padding: 0; }
-.capture-preview img { width: 100%; height: 100%; object-fit: cover; }
+.capture-preview img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .capture-kind, .capture strong { display: block; margin: 0 12px; }
 .capture-kind { font: 10px/1.4 var(--mono); color: var(--accent); text-transform: uppercase; margin-top: 10px; margin-bottom: 4px; }
 dialog { width: min(520px, calc(100% - 36px)); background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
@@ -123,7 +131,6 @@ dialog::backdrop { background: #161411b8; }
   .top-actions { min-height: 62px; }
   .hero-copy { padding: 53px 0 30px; }
   h1 { font-size: clamp(48px, 11.5vw, 78px); }
-  .stage { padding: 8% 6%; }
   .stage::before { inset: 10px; }
   .corner { display: none; }
   .app-window { border-radius: 6px; }
@@ -155,10 +162,6 @@ dialog::backdrop { background: #161411b8; }
   border-bottom: 1px solid var(--line);
 }
 .hero-copy { padding-top: 0; }
-.stage {
-  background: linear-gradient(120deg, #30283122, #442d3020), url("assets/coast.webp") center / cover;
-  padding: 10% 7%;
-}
 .film-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 30px; }
 .film-heading h2 { margin: 0; }
 .film-heading a { font-size: 14px; color: var(--accent); padding-block: 6px; white-space: nowrap; }
@@ -175,7 +178,10 @@ dialog::backdrop { background: #161411b8; }
   .intro { margin-left: 0; }
   .actions { justify-content: flex-start; }
 }
-@media (max-width: 760px) {
+/* Side by side the films are too small to read at tablet width, so they stack sooner than the rest. */
+@media (max-width: 900px) {
   .film-grid { grid-template-columns: 1fr; gap: 30px; }
+}
+@media (max-width: 760px) {
   .film-heading { align-items: start; flex-direction: column; gap: 8px; }
 }
