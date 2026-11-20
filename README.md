@@ -95,17 +95,34 @@ Removing a connector keeps the items it saved.
 
 ## Connect an agent
 
-Open Kept once to create the library, then copy the setup command from **Settings › Agents**. The
-app fills in the path to its bundled server.
+Open **Settings › Agents** and click **Connect** beside Claude Code, Codex, Cursor, or Claude
+Desktop. Kept registers its bundled server with that agent, and the agent picks it up in its next
+session. To remove it again, choose **Disconnect** from the menu in the same row.
 
-```sh
-claude mcp add --scope user kept -- "/path/to/Kept.app/Contents/MacOS/kept-mcp"
-codex mcp add kept -- "/path/to/Kept.app/Contents/MacOS/kept-mcp"
+Then capture a few things and hand them over in one line.
+
+```text
+Kept fix last 4
 ```
 
-Other MCP clients can run the same executable over stdio. The read-only server exposes
-`search_library`, `list_recent`, and `get_item`. Results include a `kept://item/<id>` link that
-opens the saved item in Kept.
+The agent receives your four latest items in a single call, with the screenshots attached and your
+notes alongside, and works through what each one shows. Clients that support MCP prompts also offer
+this as a command, such as `/mcp__kept__fix 4` in Claude Code. `/mcp__kept__last 4` brings the items
+into the conversation without asking for a fix.
+
+To connect from a terminal, open Kept once and run the command for your agent.
+
+```sh
+claude mcp add --scope user kept -- "$HOME/Library/Application Support/Kept/kept-mcp"
+codex mcp add kept -- "$HOME/Library/Application Support/Kept/kept-mcp"
+```
+
+The path is the same on every Mac. Kept keeps a link there to the server inside the app and updates
+it at launch, so the connection survives moving or updating Kept. Other MCP clients can run the same
+path over stdio.
+
+The read-only server exposes `get_latest`, `search_library`, `list_recent`, and `get_item`, and the
+`fix` and `last` prompts. Results include a `kept://item/<id>` link that opens the saved item in Kept.
 
 An agent using a cloud model can send the library content it reads to its model provider.
 
@@ -142,9 +159,10 @@ scripts/build-app.sh
 scripts/test-native-ui.py
 ```
 
-`test.sh` covers capture settings, clipboard handling, storage, OCR, connectors, MCP, and seeded
-random sequences. It uses temporary libraries, named pasteboards, a local HTTP fixture, and
-synthetic Keychain entries that it removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence.
+`test.sh` covers capture settings, clipboard handling, storage, OCR, connectors, MCP, agent
+connections, and seeded random sequences. It uses temporary libraries, named pasteboards, a local
+HTTP fixture, stand-ins for the agents’ command-line tools, and synthetic Keychain entries that it
+removes. Set `KEPT_TEST_SEED=42` to replay one storage sequence.
 
 `test-native-ui.py` checks rendered windows for all five Settings tabs, connector sheets,
 onboarding, the library, the inspector, and Quick Search. Global shortcut delivery, live screen
