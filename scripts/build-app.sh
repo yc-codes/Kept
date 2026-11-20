@@ -15,6 +15,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Kept" "$APP/Contents/MacOS/Kept"
 cp "$BIN/kept-mcp" "$APP/Contents/MacOS/kept-mcp"
+cp -R "$BIN/Kept_Kept.bundle" "$APP/Contents/Resources/"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
 # App icon: drawn by scripts/make-icon.swift, cached until that script changes.

@@ -76,9 +76,12 @@ private struct HUDView: View {
                 .background(Color.black.opacity(0.15))
                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Label("Saved to Kept", systemImage: "checkmark.circle.fill")
-                    .symbolRenderingMode(.multicolor)
-                    .font(.callout.weight(.semibold))
+                Label {
+                    Text("Saved to Kept")
+                } icon: {
+                    KeptIcon.checkCircle.image().foregroundStyle(.green)
+                }
+                .font(.callout.weight(.semibold))
                 Text("Copied. Press ⌘V to paste, or click to add a note.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

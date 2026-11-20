@@ -2,31 +2,24 @@ import KeptCore
 import SwiftUI
 
 struct SettingsView: View {
-    @EnvironmentObject private var settings: CaptureSettings
     @Local private var tab = DebugSnapshot.environment["KEPT_SNAPSHOT_TAB"] ?? "capture"
 
     var body: some View {
         TabView(selection: $tab) {
             CaptureSettingsTab()
-                .tabItem { Label("Capture", systemImage: "tray.and.arrow.down") }
+                .tabItem { Label("Capture", icon: .archiveTray, size: 24) }
                 .tag("capture")
             ConnectorSettingsTab()
-                .tabItem { Label("Connectors", systemImage: "point.3.connected.trianglepath.dotted") }
+                .tabItem { Label("Connectors", icon: .plugsConnected, size: 24) }
                 .tag("connectors")
-            Picker("Theme", selection: $settings.theme) {
-                ForEach(AppTheme.allCases, id: \.self) { theme in
-                    Text(theme.rawValue.capitalized).tag(theme)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(24)
-            .tabItem { Label("Appearance", systemImage: "circle.lefthalf.filled") }
-            .tag("appearance")
+            AppearanceSettingsTab()
+                .tabItem { Label("Appearance", icon: .sun, size: 24) }
+                .tag("appearance")
             ShortcutSettingsTab()
-                .tabItem { Label("Shortcuts", systemImage: "keyboard") }
+                .tabItem { Label("Shortcuts", icon: .keyboard, size: 24) }
                 .tag("shortcuts")
             AgentSettingsTab()
-                .tabItem { Label("Agents", systemImage: "sparkles") }
+                .tabItem { Label("Agents", icon: .sparkle, size: 24) }
                 .tag("agents")
         }
         .frame(width: 560)
@@ -104,7 +97,7 @@ private struct AgentSettingsTab: View {
                 Text("Your library stays on this Mac, but an agent that runs its model in the cloud sends whatever it reads from Kept to that provider.")
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
-                Image(systemName: "exclamationmark.shield")
+                KeptIcon.shieldWarning.image()
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -146,9 +139,9 @@ private struct CopyButton: View {
                 copied = false
             }
         } label: {
-            Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                .frame(width: 16)
+            (copied ? KeptIcon.check : .copy).image()
         }
+        .accessibilityLabel(copied ? "Copied" : "Copy")
         .help("Copy")
     }
 }

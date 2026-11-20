@@ -4,7 +4,7 @@ import Foundation
 struct FeedConnector: Connector {
     let id = "feed"
     let name = "RSS or Atom Feed"
-    let symbol = "dot.radiowaves.up.forward"
+    let icon = KeptIcon.rss
     let summary = "New entries from a feed, saved as links. No sign-in needed."
     let fields = [ConnectorField(key: "url", label: "Feed address", placeholder: "https://example.com/feed.xml")]
     let help: ConnectorHelp? = nil

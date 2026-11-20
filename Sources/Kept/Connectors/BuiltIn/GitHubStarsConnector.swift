@@ -4,7 +4,7 @@ import Foundation
 struct GitHubStarsConnector: Connector {
     let id = "github-stars"
     let name = "GitHub Stars"
-    let symbol = "star.circle"
+    let icon = KeptIcon.githubLogo
     let summary = "Repositories you star on GitHub, saved as links."
     let fields = [ConnectorField(key: "token", label: "Access token", placeholder: "github_pat_…", isSecret: true)]
     let help: ConnectorHelp? = ConnectorHelp(

@@ -77,21 +77,20 @@ struct WelcomeView: View {
                     .multilineTextAlignment(.center)
             }
             VStack(alignment: .leading, spacing: 16) {
-                point("camera.viewfinder", "Snip and keep working",
+                point(.cornersOut, "Snip and keep working",
                       "Drag over part of your screen. It is on your clipboard to paste, and saved in your library.")
-                point("note.text", "Remember why",
+                point(.note, "Remember why",
                       "Add your own note to anything. Kept also reads the text inside images so you can search it.")
-                point("sparkle.magnifyingglass", "Find it again, or ask",
+                point(.magnifyingGlass, "Find it again, or ask",
                       "Browse the library, search from any app, or let Claude Code and Codex look things up for you.")
             }
             .padding(.top, 4)
         }
     }
 
-    private func point(_ symbol: String, _ title: String, _ detail: String) -> some View {
+    private func point(_ icon: KeptIcon, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: symbol)
-                .font(.system(size: 22))
+            icon.image(size: 22)
                 .foregroundStyle(LibraryPalette.accent)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
@@ -149,7 +148,7 @@ struct WelcomeView: View {
                 ShortcutDemo(shortcut: settings.quickShortcut, caption: "Search Kept from any app")
             }
             .padding(.vertical, 4)
-            Label("Kept stays in the menu bar when you close its window, so the shortcuts keep working.", systemImage: "menubar.rectangle")
+            Label("Kept stays in the menu bar when you close its window, so the shortcuts keep working.", icon: .window)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -172,8 +171,11 @@ struct WelcomeView: View {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
                                 .strokeBorder(Color(nsColor: .separatorColor))
                         }
-                    Label("Saved once to your library and copied. Press ⌘V in any app to paste it.", systemImage: "checkmark.circle.fill")
-                        .symbolRenderingMode(.multicolor)
+                    Label {
+                        Text("Saved once to your library and copied. Press ⌘V in any app to paste it.")
+                    } icon: {
+                        KeptIcon.checkCircle.image().foregroundStyle(.green)
+                    }
                     Button("Snip Again") { AppServices.shared.snip() }
                         .controlSize(.small)
                 }

@@ -141,8 +141,7 @@ struct QuickSearchView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 20))
+                KeptIcon.magnifyingGlass.image(size: 20)
                     .foregroundStyle(.secondary)
                 TextField("Search Kept", text: $model.query)
                     .textFieldStyle(.plain)
@@ -156,8 +155,7 @@ struct QuickSearchView: View {
 
             if model.results.isEmpty {
                 VStack(spacing: 6) {
-                    Image(systemName: model.query.isEmpty ? "tray" : "magnifyingglass")
-                        .font(.system(size: 28))
+                    (model.query.isEmpty ? KeptIcon.tray : .magnifyingGlass).image(size: 28)
                         .foregroundStyle(.tertiary)
                     Text(model.query.isEmpty ? "Nothing kept yet" : "No matches for “\(model.query)”")
                         .foregroundStyle(.secondary)

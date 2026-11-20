@@ -40,8 +40,8 @@ struct SnipDemo: View {
             ZStack(alignment: .topLeading) {
                 screen
                 selection(p)
-                destination("doc.on.clipboard", "Clipboard", y: 14, p: p)
-                destination("tray.full", "Library", y: 92, p: p)
+                destination(.clipboard, "Clipboard", y: 14, p: p)
+                destination(.tray, "Library", y: 92, p: p)
                 flyer(p, toY: 22)
                 flyer(p, toY: 100)
                 cursor(p)
@@ -85,8 +85,7 @@ struct SnipDemo: View {
         ZStack {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(LinearGradient(colors: [.orange.opacity(0.85), .pink.opacity(0.8)], startPoint: .top, endPoint: .bottom))
-            Image(systemName: "mountain.2.fill")
-                .font(.system(size: 26))
+            KeptIcon.mountains.image(size: 26)
                 .foregroundStyle(.white.opacity(0.9))
         }
     }
@@ -113,8 +112,7 @@ struct SnipDemo: View {
     private func cursor(_ p: Double) -> some View {
         let grow = ramp(p, 0.10, 0.38)
         let target = photo.insetBy(dx: -7, dy: -7)
-        return Image(systemName: "plus")
-            .font(.system(size: 13, weight: .medium))
+        return KeptIcon.plus.image(size: 13)
             .foregroundStyle(Color.primary)
             .offset(x: target.minX + target.width * grow - 7, y: target.minY + 9 + target.height * grow - 8)
             .opacity((1 - ramp(p, 0.40, 0.46)) * ramp(p, 0.0, 0.05))
@@ -131,16 +129,14 @@ struct SnipDemo: View {
             .opacity(t > 0 ? 1 - ramp(p, 0.66, 0.72) : 0)
     }
 
-    private func destination(_ symbol: String, _ title: String, y: Double, p: Double) -> some View {
+    private func destination(_ symbol: KeptIcon, _ title: String, y: Double, p: Double) -> some View {
         let landed = ramp(p, 0.68, 0.76) * (1 - ramp(p, 0.94, 1.0))
         return VStack(spacing: 4) {
             ZStack(alignment: .bottomTrailing) {
-                Image(systemName: symbol)
-                    .font(.system(size: 20))
+                symbol.image(size: 20)
                     .foregroundStyle(landed > 0.5 ? Color.accentColor : Color.secondary)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white, .green)
+                KeptIcon.checkCircle.image(size: 12)
+                    .foregroundStyle(.green)
                     .scaleEffect(landed)
                     .offset(x: 7, y: 4)
             }
@@ -196,8 +192,7 @@ struct ShortcutDemo: View {
                             .offset(y: 2 * down)
                     }
                 }
-                Image(systemName: "arrow.right")
-                    .font(.caption)
+                KeptIcon.arrowRight.image(size: 13)
                     .foregroundStyle(.tertiary)
                 Text(caption)
                     .font(.callout)
@@ -213,27 +208,27 @@ struct ShortcutDemo: View {
 struct CaptureStack: View {
     var body: some View {
         ZStack {
-            tile("text.alignleft", background: LibraryPalette.surface, ink: .secondary)
+            tile(.textAlignLeft, background: LibraryPalette.surface, ink: .secondary)
                 .rotationEffect(.degrees(-14))
                 .offset(x: -48, y: 7)
-            tile("link", background: LibraryPalette.selection, ink: .primary)
+            tile(.link, background: LibraryPalette.selection, ink: .primary)
                 .rotationEffect(.degrees(15))
                 .offset(x: 48, y: 4)
-            tile("viewfinder", background: Color(red: 0.85, green: 0.31, blue: 0.18), ink: .white)
+            tile(.cornersOut, background: Color(red: 0.85, green: 0.31, blue: 0.18), ink: .white)
                 .rotationEffect(.degrees(-5))
         }
         .frame(width: 210, height: 110)
         .accessibilityHidden(true)
     }
 
-    private func tile(_ symbol: String, background: Color, ink: Color) -> some View {
+    private func tile(_ symbol: KeptIcon, background: Color, ink: Color) -> some View {
         RoundedRectangle(cornerRadius: 12)
             .fill(background)
             .overlay {
                 RoundedRectangle(cornerRadius: 12).strokeBorder(LibraryPalette.line)
             }
             .overlay {
-                Image(systemName: symbol).font(.system(size: 30, weight: .medium)).foregroundStyle(ink)
+                symbol.image(size: 30).foregroundStyle(ink)
             }
             .frame(width: 78, height: 80)
     }
@@ -262,7 +257,7 @@ struct AgentDemo: View {
                 }
                 ZStack(alignment: .topLeading) {
                     HStack(spacing: 5) {
-                        Image(systemName: "sparkles")
+                        KeptIcon.sparkle.image(size: 13)
                         Text("Searching Kept…")
                     }
                     .font(.caption)
@@ -274,7 +269,7 @@ struct AgentDemo: View {
                             .fill(LinearGradient(colors: [.orange.opacity(0.85), .pink.opacity(0.8)], startPoint: .top, endPoint: .bottom))
                             .frame(width: 48, height: 36)
                             .overlay {
-                                Image(systemName: "rectangle.split.3x1")
+                                KeptIcon.window.image()
                                     .foregroundStyle(.white.opacity(0.9))
                             }
                         VStack(alignment: .leading, spacing: 2) {

@@ -20,8 +20,7 @@ struct ConnectorSettingsTab: View {
             Group {
                 if center.connections.isEmpty {
                     VStack(spacing: 6) {
-                        Image(systemName: "point.3.connected.trianglepath.dotted")
-                            .font(.system(size: 22))
+                        KeptIcon.plugsConnected.image(size: 22)
                             .foregroundStyle(.secondary)
                         Text("No connectors yet")
                         Text("Add one to start saving from it. You can add the same service more than once, for example with two accounts.")
@@ -64,7 +63,7 @@ struct ConnectorSettingsTab: View {
                         Button {
                             draft = ConnectionDraft(connector: connector, existing: nil)
                         } label: {
-                            Label(connector.name, systemImage: connector.symbol)
+                            Label(connector.name, icon: connector.icon)
                         }
                     }
                 }
@@ -78,7 +77,7 @@ struct ConnectorSettingsTab: View {
                 Text("Sign-ins are stored in your Mac's Keychain. Kept contacts only the services you connect, about every half hour while it is running.")
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
-                Image(systemName: "lock.shield")
+                KeptIcon.shieldCheck.image()
             }
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -130,8 +129,7 @@ private struct ConnectionRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: connection.connector?.symbol ?? "questionmark.circle")
-                .font(.system(size: 15))
+            (connection.connector?.icon ?? .question).image()
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {
@@ -160,7 +158,7 @@ private struct ConnectionRow: View {
                 Divider()
                 Button("Remove…", role: .destructive, action: onRemove)
             } label: {
-                Image(systemName: "ellipsis.circle")
+                KeptIcon.dotsThreeCircle.image()
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -202,8 +200,7 @@ private struct ConnectSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: connector.symbol)
-                    .font(.system(size: 24))
+                connector.icon.image(size: 24)
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
@@ -249,14 +246,14 @@ private struct ConnectSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Link(destination: help.url) {
-                        Label(help.title, systemImage: "arrow.up.forward.square")
+                        Label(help.title, icon: .arrowSquareOut)
                     }
                 }
                 .font(.callout)
             }
 
             if let failure {
-                Label(failure, systemImage: "exclamationmark.triangle")
+                Label(failure, icon: .warning)
                     .font(.callout)
                     .foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)

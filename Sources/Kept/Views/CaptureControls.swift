@@ -9,7 +9,7 @@ struct CaptureSourceList: View {
     var body: some View {
         VStack(spacing: 0) {
             row(
-                symbol: "camera.viewfinder", title: "Region snips",
+                symbol: .cornersOut, title: "Region snips",
                 detail: "Only when you press \(settings.snipShortcut.display) and drag over part of the screen."
             ) {
                 Text("On demand")
@@ -17,15 +17,15 @@ struct CaptureSourceList: View {
                     .foregroundStyle(.secondary)
             }
             Divider().padding(.leading, 46)
-            row(symbol: "photo", title: "Copied images", detail: "Pictures and screenshots you copy in any app.") {
+            row(symbol: .image, title: "Copied images", detail: "Pictures and screenshots you copy in any app.") {
                 Toggle("Copied images", isOn: $settings.captureImages).labelsHidden()
             }
             Divider().padding(.leading, 46)
-            row(symbol: "link", title: "Copied links", detail: "Web addresses you copy, such as from the address bar.") {
+            row(symbol: .link, title: "Copied links", detail: "Web addresses you copy, such as from the address bar.") {
                 Toggle("Copied links", isOn: $settings.captureLinks).labelsHidden()
             }
             Divider().padding(.leading, 46)
-            row(symbol: "text.alignleft", title: "Copied text", detail: "Any other text you copy. The broadest option.") {
+            row(symbol: .textAlignLeft, title: "Copied text", detail: "Any other text you copy. The broadest option.") {
                 Toggle("Copied text", isOn: $settings.captureText).labelsHidden()
             }
         }
@@ -37,11 +37,10 @@ struct CaptureSourceList: View {
     }
 
     private func row<Control: View>(
-        symbol: String, title: String, detail: String, @ViewBuilder control: () -> Control
+        symbol: KeptIcon, title: String, detail: String, @ViewBuilder control: () -> Control
     ) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.system(size: 15))
+            symbol.image()
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: 1) {
@@ -204,10 +203,13 @@ struct ShortcutRows: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color(nsColor: .separatorColor))
             }
             if let warning = settings.shortcutWarning {
-                Label(warning, systemImage: "exclamationmark.triangle.fill")
-                    .symbolRenderingMode(.multicolor)
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
+                Label {
+                    Text(warning)
+                } icon: {
+                    KeptIcon.warning.image().foregroundStyle(.orange)
+                }
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

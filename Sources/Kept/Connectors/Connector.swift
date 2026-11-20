@@ -9,8 +9,8 @@ protocol Connector: Sendable {
     /// Stable identifier stored with each connection. Never change it once shipped.
     var id: String { get }
     var name: String { get }
-    /// SF Symbol name.
-    var symbol: String { get }
+    /// Icon displayed in connector settings.
+    var icon: KeptIcon { get }
     /// One line for the "Add Connector" menu and sheet: what gets saved.
     var summary: String { get }
     /// What the user fills in to connect. Fields marked `isSecret` are kept in the Keychain.

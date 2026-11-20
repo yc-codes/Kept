@@ -134,14 +134,14 @@ struct InspectorView: View {
                     copied = false
                 }
             } label: {
-                Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                Label(copied ? "Copied" : "Copy", icon: copied ? .check : .copy)
             }
             .buttonStyle(.borderedProminent)
             if item.kind != .text {
                 Button {
                     library.open(item)
                 } label: {
-                    Label(item.kind == .link ? "Open Link" : "Open", systemImage: "arrow.up.forward.square")
+                    Label(item.kind == .link ? "Open Link" : "Open", icon: .arrowSquareOut)
                 }
             }
         }
@@ -153,14 +153,14 @@ struct InspectorView: View {
             Button {
                 library.toggleFavorite(item)
             } label: {
-                Image(systemName: item.favorite ? "star.fill" : "star")
+                (item.favorite ? KeptIcon.starFill : .star).image()
                     .foregroundStyle(item.favorite ? LibraryPalette.accent : Color.secondary)
             }
             .buttonStyle(.bordered)
             .accessibilityLabel(item.favorite ? "Remove from Favorites" : "Add to Favorites")
             .help(item.favorite ? "Remove from Favorites" : "Add to Favorites")
             Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
+                KeptIcon.trash.image()
             }
             .buttonStyle(.bordered)
             .accessibilityLabel("Delete item")

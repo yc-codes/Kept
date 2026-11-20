@@ -25,9 +25,11 @@ struct LibraryView: View {
                             InspectorView(item: item, onDelete: { pendingDelete = item })
                                 .id(item.id)
                         } else {
-                            ContentUnavailableView(
-                                "No item selected", systemImage: "sidebar.trailing",
-                                description: Text("Select an item to see its source and add a note."))
+                            ContentUnavailableView {
+                                Label("No item selected", icon: .inspector, size: 32)
+                            } description: {
+                                Text("Select an item to see its source and add a note.")
+                            }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .background(LibraryPalette.sidebar)
                         }
@@ -41,8 +43,8 @@ struct LibraryView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Picker("View", selection: $viewMode) {
-                    Label("Grid", systemImage: "square.grid.2x2").tag("grid")
-                    Label("List", systemImage: "list.bullet").tag("list")
+                    Label("Grid", icon: .squaresFour).tag("grid")
+                    Label("List", icon: .listBullets).tag("list")
                 }
                 .pickerStyle(.segmented)
                 .help("Show items as a grid or a list")
@@ -50,7 +52,7 @@ struct LibraryView: View {
                 Button {
                     showInspector.toggle()
                 } label: {
-                    Label("Inspector", systemImage: "sidebar.trailing")
+                    Label("Inspector", icon: .inspector)
                 }
                 .accessibilityLabel(showInspector ? "Hide inspector" : "Show inspector")
                 .help("Show or hide the inspector")
@@ -138,7 +140,7 @@ struct LibraryView: View {
                     .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [9, 6]))
                     .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
-                        Label("Drop to save in Kept", systemImage: "tray.and.arrow.down.fill")
+                        Label("Drop to save in Kept", icon: .archiveTray, size: 20)
                             .font(.title3.weight(.semibold))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
@@ -164,10 +166,14 @@ struct LibraryView: View {
             }
             Spacer(minLength: 0)
             Menu {
-                Button("Save Clipboard", systemImage: "doc.on.clipboard") { library.saveClipboard() }
-                Button("Import Images…", systemImage: "photo.on.rectangle") { library.showImportPanel() }
+                Button { library.saveClipboard() } label: {
+                    Label("Save Clipboard", icon: .clipboard)
+                }
+                Button { library.showImportPanel() } label: {
+                    Label("Import Images…", icon: .images)
+                }
             } label: {
-                Label("Take Snip", systemImage: "camera.viewfinder")
+                Label("Take Snip", icon: .cornersOut)
                     .font(.callout.weight(.semibold))
             } primaryAction: {
                 AppServices.shared.snip()
@@ -191,11 +197,13 @@ struct LibraryView: View {
         if !library.searchText.isEmpty {
             ContentUnavailableView.search(text: library.searchText)
         } else if library.filter != .all {
-            ContentUnavailableView(
-                "No \(library.filter.title)", systemImage: library.filter.symbol,
-                description: Text(library.filter == .favorites
+            ContentUnavailableView {
+                Label("No \(library.filter.title)", icon: library.filter.icon, size: 32)
+            } description: {
+                Text(library.filter == .favorites
                     ? "Star an item to find it here."
-                    : "Items you save will appear here."))
+                    : "Items you save will appear here.")
+            }
         } else {
             VStack(spacing: 14) {
                 CaptureStack()
@@ -271,7 +279,7 @@ struct SidebarView: View {
                 Button {
                     settings.paused.toggle()
                 } label: {
-                    Image(systemName: settings.paused ? "play.fill" : "pause.fill")
+                    (settings.paused ? KeptIcon.play : .pause).image()
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.borderless)
@@ -289,7 +297,7 @@ struct SidebarView: View {
 
     private func filterRow(_ filter: ItemFilter) -> some View {
         let count = library.counts[filter] ?? 0
-        return Label(filter.title, systemImage: filter.symbol)
+        return Label(filter.title, icon: filter.icon)
             .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
             .contentShape(Rectangle())
             .badge(count.formatted())
@@ -437,15 +445,15 @@ struct ItemTable: View {
         Table(library.items, selection: $library.selectedID) {
             TableColumn("Name") { item in
                 HStack(spacing: 8) {
-                    Image(systemName: item.symbol)
+                    item.icon.image()
                         .foregroundStyle(.secondary)
                         .frame(width: 16)
                     Text(item.title)
                         .lineLimit(1)
                     if item.favorite {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.yellow)
+                        KeptIcon.starFill.image(size: 12)
+                            .foregroundStyle(LibraryPalette.accent)
+                            .accessibilityLabel("Favorite")
                     }
                 }
             }
@@ -496,12 +504,25 @@ struct ItemTable: View {
     }
 }
 
+private extension ItemFilter {
+    var icon: KeptIcon {
+        switch self {
+        case .all: return .tray
+        case .snips: return .cornersOut
+        case .images: return .image
+        case .links: return .link
+        case .text: return .textAlignLeft
+        case .favorites: return .star
+        }
+    }
+}
+
 extension Item {
-    var symbol: String {
+    var icon: KeptIcon {
         switch kind {
-        case .image: return method == .snip ? "camera.viewfinder" : "photo"
-        case .link: return "link"
-        case .text: return "text.alignleft"
+        case .image: return method == .snip ? .cornersOut : .image
+        case .link: return .link
+        case .text: return .textAlignLeft
         }
     }
 

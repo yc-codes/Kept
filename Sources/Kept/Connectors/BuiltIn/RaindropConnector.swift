@@ -4,7 +4,7 @@ import Foundation
 struct RaindropConnector: Connector {
     let id = "raindrop"
     let name = "Raindrop.io"
-    let symbol = "drop"
+    let icon = KeptIcon.drop
     let summary = "Bookmarks from your Raindrop.io collections, saved as links."
     let fields = [ConnectorField(key: "token", label: "Test token", placeholder: "Paste the token", isSecret: true)]
     let help: ConnectorHelp? = ConnectorHelp(

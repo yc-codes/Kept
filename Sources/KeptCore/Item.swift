@@ -42,17 +42,6 @@ public enum ItemFilter: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    public var symbol: String {
-        switch self {
-        case .all: return "tray.full"
-        case .snips: return "camera.viewfinder"
-        case .images: return "photo"
-        case .links: return "link"
-        case .text: return "text.alignleft"
-        case .favorites: return "star"
-        }
-    }
-
     var whereClause: String {
         switch self {
         case .all: return "1=1"

@@ -37,12 +37,12 @@ struct ItemPreview: View {
         case .text:
             Group {
                 if compact {
-                    Image(systemName: "text.alignleft")
+                    KeptIcon.textAlignLeft.image()
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
-                        Image(systemName: "text.quote")
+                        KeptIcon.quotes.image()
                             .foregroundStyle(.secondary)
                         Text(String(item.text.prefix(420)))
                             .font(.system(size: 15, weight: .medium))
@@ -56,8 +56,7 @@ struct ItemPreview: View {
             .background(LibraryPalette.inset)
         case .link:
             VStack(alignment: compact ? .center : .leading, spacing: 7) {
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: compact ? 14 : 22, weight: .medium))
+                KeptIcon.arrowUpRight.image(size: compact ? 14 : 22)
                 if !compact {
                     Spacer(minLength: 0)
                     Text(item.host)
@@ -106,7 +105,7 @@ struct ItemCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Image(systemName: item.symbol)
+                    item.icon.image()
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                     Text(item.title)
@@ -114,7 +113,7 @@ struct ItemCard: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if item.favorite {
-                        Image(systemName: "star.fill")
+                        KeptIcon.starFill.image(size: 14)
                             .foregroundStyle(LibraryPalette.accent)
                             .accessibilityLabel("Favorite")
                     }
@@ -122,7 +121,7 @@ struct ItemCard: View {
                 .font(.callout)
                 HStack(spacing: 5) {
                     if !item.note.isEmpty {
-                        Image(systemName: "note.text")
+                        KeptIcon.note.image(size: 14)
                             .help(item.note)
                     }
                     Text(subtitle)
