@@ -4,7 +4,10 @@ Kept is a local-first capture library for macOS. Take a screen snip and paste it
 Kept saves a copy in your library. You can also save images, links, and text, add your own notes,
 and search the text inside screenshots.
 
-![The Kept library showing a grid of saved captures and category filters in the sidebar](website/assets/library-light.webp)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/library-dark.webp">
+  <img src="website/assets/library-light.webp" alt="The Kept library showing a grid of saved captures and category filters in the sidebar" width="1160">
+</picture>
 
 ## Build and run
 
