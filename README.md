@@ -9,34 +9,33 @@ and search the text inside screenshots.
   <img src="website/assets/library-light.webp" alt="The Kept library showing a grid of saved captures and category filters in the sidebar" width="1160">
 </picture>
 
+## Install the beta
+
+Kept requires macOS 14 Sonoma or later. Download the archive for your processor from
+[GitHub Releases](https://github.com/yc-codes/Kept/releases).
+
+| About This Mac shows | Download |
+| --- | --- |
+| An Apple M-series chip | `Kept-macOS-arm64.zip` |
+| An Intel processor | `Kept-macOS-x86_64.zip` |
+
+Unzip the archive, move **Kept.app** to Applications, and open it. Beta builds are ad-hoc signed
+and unnotarized. If macOS blocks the first launch, you can build from source below.
+
+Press **⌃⌥S** to save your first snip. Paste it immediately, or press **⌃⌥K** to find it later.
+
 ## Build and run
 
-Kept runs on macOS 14 or later. Building from source requires the **Xcode Command Line Tools with
-Swift 6 or later**. Run `xcode-select --install` if you need to install the tools.
-
-Run these commands from the repository root.
+Install Xcode Command Line Tools with Swift 6 or later, then run:
 
 ```sh
+git clone https://github.com/yc-codes/Kept.git
+cd Kept
 scripts/build-app.sh
 open build/Kept.app
 ```
 
-The app bundle includes the Share extension and the `kept-mcp` server.
-
-### Packaged builds
-
-When builds are available, choose the archive for your Mac.
-
-| Mac | Archive |
-| --- | --- |
-| Apple silicon | `Kept-macOS-arm64.zip` |
-| Intel | `Kept-macOS-x86_64.zip` |
-
-When enabled on GitHub, the `Kept builds` workflow tests and packages both architectures on branch
-pushes. Successful branch builds publish nightly artifacts in
-[Actions](https://github.com/yc-codes/Kept/actions). A new tag, such as `v0.1.0`, publishes both
-archives to [Releases](https://github.com/yc-codes/Kept/releases) after both builds pass. CI
-archives use ad-hoc signatures and are unnotarized.
+The bundle includes the Share extension and the read-only `kept-mcp` server.
 
 ## Use Kept
 
@@ -63,9 +62,9 @@ If Kept already appears enabled and capture is refused, open **System Settings �
 › Screen & System Audio Recording**. Toggle Kept off and back on, or remove and re-add your current
 copy, then quit and reopen the app.
 
-The local build script reuses a signing identity in
-`~/Library/Developer/Kept/kept-signing.keychain-db` so macOS can recognize the app across rebuilds.
-To use your own signing identity, set `KEPT_SIGN_IDENTITY` when running `scripts/build-app.sh`.
+Local builds use ad-hoc signing by default. Rebuilding may require granting Screen Recording
+access again. To keep a stable signing identity, set `KEPT_SIGN_IDENTITY` to a code-signing
+certificate in your Keychain when running `scripts/build-app.sh`.
 
 ## Privacy and storage
 
@@ -188,3 +187,14 @@ scripts/test-website.sh
 
 Set `KEPT_TEST_CHROME` to an installed Chrome executable to use it in place of Playwright’s
 Chromium. Set `KEPT_TEST_SEED=42` to replay one browser sequence.
+
+## Contributing
+
+Run the service tests before submitting a pull request. For capture or interface changes, include
+your macOS version and the steps you used to verify the behavior. Use sample captures when sharing
+screenshots or logs.
+
+## License
+
+Kept’s original source code is available under the [MIT License](LICENSE).
+The bundled icons carry the [Phosphor Icons MIT notice](Sources/Kept/Icons/LICENSE-Phosphor.txt).

@@ -40,7 +40,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Kept-${{ github.ref_type == 'tag' && 'stable' || 'nightly' }}-${{ matrix.arch }}-${{ github.sha }}
+          name: Kept-${{ github.ref_type == 'tag' && 'release' || 'nightly' }}-${{ matrix.arch }}-${{ github.sha }}
           path: build/Kept-macOS-${{ matrix.arch }}.zip
           if-no-files-found: error
           compression-level: 0
@@ -54,13 +54,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: Kept-stable-*
+          pattern: Kept-release-*
           merge-multiple: true
           path: dist
 
-      - name: Publish stable release
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes \
+          flags=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            flags+=(--prerelease --latest=false)
+          fi
+          gh release create "${flags[@]}" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes \
             -- "$GITHUB_REF_NAME" dist/Kept-macOS-arm64.zip dist/Kept-macOS-x86_64.zip
